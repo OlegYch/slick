@@ -1,5 +1,4 @@
 import com.jsuereth.sbtpgp.PgpKeys
-import com.typesafe.tools.mima.core.{MissingClassProblem, ProblemFilters}
 
 
 val testAll = taskKey[Unit]("Run all tests")
@@ -9,7 +8,6 @@ val cleanCompileTimeTests =
 
 /* Test Configuration for running tests on doc sources */
 val DocTest = config("doctest").extend(Test)
-val MacroConfig = config("macro")
 
 val tagTestGroupOther = Tags.Tag("test-group-other")
 Global / concurrentRestrictions :=
@@ -97,8 +95,7 @@ def commonTestResourcesSetting =
 
 def sampleSettings = Seq(
   Compile / unmanagedClasspath :=
-    Attributed.blank(baseDirectory.value.getParentFile / "resources") +: (Compile / unmanagedClasspath).value,
-  Compile / unmanagedClasspath ++= (slick / MacroConfig / products).value
+    Attributed.blank(baseDirectory.value.getParentFile / "resources") +: (Compile / unmanagedClasspath).value
 )
 
 ThisBuild / crossScalaVersions := Dependencies.scalaVersions
@@ -127,9 +124,7 @@ lazy val slick =
     .enablePlugins(MimaPlugin)
     .settings(
       slickGeneralSettings,
-      compilerDependencySetting("macro"),
       compilerDependencySetting("provided"),
-      inConfig(MacroConfig)(Defaults.configSettings),
       FMPP.preprocessorSettings,
       extTarget("slick"),
       name := "Slick",
@@ -142,17 +137,7 @@ lazy val slick =
 
       // suppress test status output
       test := {},
-      testOnly := {},
-
-      ivyConfigurations += MacroConfig.hide.extend(Compile),
-      Compile / unmanagedClasspath ++= (MacroConfig / products).value,
-      (Compile / packageSrc / mappings) ++= (MacroConfig / packageSrc / mappings).value,
-      (Compile / packageBin / mappings) ++= (MacroConfig / packageBin / mappings).value,
-
-      mimaBinaryIssueFilters ++= Seq(
-        ProblemFilters.exclude[MissingClassProblem]("slick.util.MacroSupportInterpolationImpl$"),
-        ProblemFilters.exclude[MissingClassProblem]("slick.util.MacroSupportInterpolationImpl"),
-      )
+      testOnly := {}
     )
 
 lazy val testkit =
