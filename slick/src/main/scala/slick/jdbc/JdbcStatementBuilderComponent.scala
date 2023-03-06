@@ -4,14 +4,14 @@ import scala.collection.mutable.HashMap
 import scala.language.existentials
 
 import slick.SlickException
-import slick.ast._
-import slick.ast.TypeUtil._
+import slick.ast.*
+import slick.ast.TypeUtil.*
 import slick.ast.Util.nodeToNodeOps
 import slick.compiler.{CodeGen, CompilerState, QueryCompiler, RewriteBooleans}
-import slick.lifted._
+import slick.lifted.*
 import slick.relational.{CompiledMapping, RelationalCapabilities, RelationalProfile, ResultConverter}
 import slick.sql.SqlProfile
-import slick.util._
+import slick.util.*
 import slick.util.QueryInterpolator.queryInterpolator
 
 trait JdbcStatementBuilderComponent { self: JdbcProfile =>
@@ -35,7 +35,8 @@ trait JdbcStatementBuilderComponent { self: JdbcProfile =>
 
     protected[this] def compile(compiler: QueryCompiler): Artifacts = {
       val compiled = compiler.run(source).tree
-      val ResultSetMapping(_, CompiledStatement(sql, ibr: InsertBuilderResult, _), CompiledMapping(conv, _)) = compiled
+      val ResultSetMapping(_, CompiledStatement(sql, ibr: InsertBuilderResult, _), CompiledMapping(conv, _)) =
+        compiled: @unchecked
       new Artifacts(compiled, conv.asInstanceOf[ResultConverter[JdbcResultConverterDomain, Any]], ibr)
     }
 
@@ -517,7 +518,7 @@ trait JdbcStatementBuilderComponent { self: JdbcProfile =>
 
   /** Builder for INSERT statements. */
   class InsertBuilder(val ins: Insert) {
-    protected val Insert(_, table: TableNode, ProductNode(rawColumns), allFields) = ins
+    protected val Insert(_, table: TableNode, ProductNode(rawColumns), allFields) = ins: @unchecked
     protected val syms: ConstArray[FieldSymbol] = rawColumns.map { case Select(_, fs: FieldSymbol) => fs }
     protected lazy val allNames = syms.map(fs => quoteIdentifier(fs.name))
     protected lazy val allVars = syms.iterator.map(_ => "?").mkString("(", ",", ")")
@@ -538,7 +539,7 @@ trait JdbcStatementBuilderComponent { self: JdbcProfile =>
       else
         new InsertBuilderResult(table, s"$start values $allVars", syms) {
           override def buildInsert(compiledQuery: Node) = {
-            val (_, sbr: SQLBuilder.Result) = CodeGen.findResult(compiledQuery)
+            val (_, sbr: SQLBuilder.Result) = CodeGen.findResult(compiledQuery): @unchecked
             SQLBuilder.Result(start + sbr.sql, sbr.setter)
           }
 
