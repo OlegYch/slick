@@ -275,9 +275,10 @@ class CaseClassShape[
     mapLifted(TupleSupport.buildTuple(elems).asInstanceOf[LiftedTuple])
   override def copy(s: Seq[Shape[? <: ShapeLevel, ?, ?, ?]]
                    ): CaseClassShape[P, LiftedTuple, LiftedCaseClass, PlainTuple, PlainCaseClass] =
-    new CaseClassShape(mapLifted, mapPlain) {
-      override val shapes = s
-    }
+//    new CaseClassShape(mapLifted, mapPlain) {
+//      override val shapes = s
+//    }
+    ???
 }
 
 /** A generic Product class shape that can be used to lift a class of

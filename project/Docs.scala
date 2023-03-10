@@ -153,79 +153,79 @@ object Docs extends AutoPlugin {
     preprocessDocs / target := target.value / "preprocessed",
     watchSources += sourceDirectory.value,
     watchSources := watchSources.value.filterNot(_.base == (preprocessDocs / target).value),
-    preprocessDocs := {
-      val out = (preprocessDocs / target).value
-      val log = streams.value.log
-
-      IO.copyDirectory(sourceDirectory.value, out)
-      IO.copyDirectory(baseDirectory.value / "code", target.value / "code")
-
-      for ((name, dir) <- scaladocDirs.value) {
-        val dest = out / name
-        log.info(s"Copying $dir to $dest")
-        IO.copyDirectory(dir, dest, overwrite = true, preserveLastModified = true)
-
-        (dest ** "*.html").get().foreach { file =>
-          modifyFileLines(file) { line =>
-            line.replaceAll(
-              "(https://github.com/slick/slick/blob/[^\"]*)/" +
-                "(Users|home)/" +
-                "[^\"]*/slick/target/scala-[^\"]*/src_managed/main/" +
-                "([^\"]*)\\.scala",
-              """$1/scala/$3.fm"""
-            )
-          }
-        }
-      }
-
-      for (sample <- List("hello-slick", "slick-multidb", "slick-testkit-example")) {
-        val dir = out / "samples" / sample
-        IO.delete(dir)
-        ConsoleGitRunner.updated("https://github.com/slick/" + sample, None, dir, log)
-        IO.delete(dir / ".git")
-      }
-
-      out
-    },
+//    preprocessDocs := {
+//      val out = (preprocessDocs / target).value
+//      val log = streams.value.log
+//
+//      IO.copyDirectory(sourceDirectory.value, out)
+//      IO.copyDirectory(baseDirectory.value / "code", target.value / "code")
+//
+//      for ((name, dir) <- scaladocDirs.value) {
+//        val dest = out / name
+//        log.info(s"Copying $dir to $dest")
+//        IO.copyDirectory(dir, dest, overwrite = true, preserveLastModified = true)
+//
+//        (dest ** "*.html").get().foreach { file =>
+//          modifyFileLines(file) { line =>
+//            line.replaceAll(
+//              "(https://github.com/slick/slick/blob/[^\"]*)/" +
+//                "(Users|home)/" +
+//                "[^\"]*/slick/target/scala-[^\"]*/src_managed/main/" +
+//                "([^\"]*)\\.scala",
+//              """$1/scala/$3.fm"""
+//            )
+//          }
+//        }
+//      }
+//
+//      for (sample <- List("hello-slick", "slick-multidb", "slick-testkit-example")) {
+//        val dir = out / "samples" / sample
+//        IO.delete(dir)
+//        ConsoleGitRunner.updated("https://github.com/slick/" + sample, None, dir, log)
+//        IO.delete(dir / ".git")
+//      }
+//
+//      out
+//    },
     Compile / paradox / unmanagedSourceDirectories := Seq((preprocessDocs / target).value),
-    Compile / paradox := (Compile / paradox).dependsOn(preprocessDocs).value,
-    Compile / paradox := {
-      val outDir = (Compile / paradox).value
-      val files = IO.listFiles(outDir, globFilter("*.html"))
-      val ref = Versioning.currentRef(baseDirectory.value)
-      for (f <- files)
-        modifyFileLines(f) { line =>
-          line
-            .replaceAllLiterally(
-              "https://github.com/slick/slick/tree/master/doc/target/preprocessed/",
-              s"https://github.com/slick/slick/tree/$ref/doc/paradox/"
-            )
-            .replaceAllLiterally(
-              "https://github.com/slick/slick/tree/master/doc/target/code/",
-              s"https://github.com/slick/slick/tree/$ref/doc/code/"
-            )
-        }
-      outDir
-    },
-    checkScaladocLinks := {
-      for ((name, dir) <- scaladocDirs.value)
-        new ReusableSbtChecker(dir.toString, (Compile / paradox).value.toString, name, streams.value.log)
-          .run()
-    },
+//    Compile / paradox := (Compile / paradox).dependsOn(preprocessDocs).value,
+//    Compile / paradox := {
+//      val outDir = (Compile / paradox).value
+//      val files = IO.listFiles(outDir, globFilter("*.html"))
+//      val ref = Versioning.currentRef(baseDirectory.value)
+//      for (f <- files)
+//        modifyFileLines(f) { line =>
+//          line
+//            .replaceAllLiterally(
+//              "https://github.com/slick/slick/tree/master/doc/target/preprocessed/",
+//              s"https://github.com/slick/slick/tree/$ref/doc/paradox/"
+//            )
+//            .replaceAllLiterally(
+//              "https://github.com/slick/slick/tree/master/doc/target/code/",
+//              s"https://github.com/slick/slick/tree/$ref/doc/code/"
+//            )
+//        }
+//      outDir
+//    },
+//    checkScaladocLinks := {
+//      for ((name, dir) <- scaladocDirs.value)
+//        new ReusableSbtChecker(dir.toString, (Compile / paradox).value.toString, name, streams.value.log)
+//          .run()
+//    },
     addDocsToDocRepo := {
       val dir = (Compile / paradox).value
       addDocsToDocRepoImpl(dir, Versioning.maybeVersionInfo.value, streams.value.log)
     },
-    deployDocs := {
-      checkScaladocLinks.value
-
-      val log = streams.value.log
-      val dir = docRepoCheckoutDir
-      val existed = addDocsToDocRepo.value
-      log.info("Pushing changes")
-      val commitMessage = (if (existed) "Updated" else "Added") + " docs for version " + version.value
-      ConsoleGitRunner.commitAndPush(commitMessage)(dir, log)
-    },
+//    deployDocs := {
+//      checkScaladocLinks.value
+//
+//      val log = streams.value.log
+//      val dir = docRepoCheckoutDir
+//      val existed = addDocsToDocRepo.value
+//      log.info("Pushing changes")
+//      val commitMessage = (if (existed) "Updated" else "Added") + " docs for version " + version.value
+//      ConsoleGitRunner.commitAndPush(commitMessage)(dir, log)
+//    },
     showParadoxProperties := {
       val props = (Compile / paradoxProperties).value
       val colWidth = props.keys.map(_.length).max

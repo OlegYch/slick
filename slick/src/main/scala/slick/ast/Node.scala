@@ -72,13 +72,14 @@ trait Node extends Dumpable {
 
   /** Return this Node with no Type assigned (if it has not yet been observed) or an untyped copy. */
   final def untyped: Self =
-    if(seenType || _type != UnassignedType) buildCopy else this
+    ???//if(seenType || _type != UnassignedType) buildCopy else this
 
   /** Return this Node with a Type assigned (if no other type has been seen for it yet) or a typed copy. */
   final def :@ (newType: Type): Self = {
-    val n: Self = if(seenType && newType != _type) buildCopy else this
-    n._type = newType
-    n
+//    val n: Self = if(seenType && newType != _type) buildCopy else this
+//    n._type = newType
+//    n
+    ???
   }
 
   /** Rebuild this node and all children with their computed type. If this node already has a type,

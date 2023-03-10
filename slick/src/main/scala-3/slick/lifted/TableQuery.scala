@@ -50,6 +50,6 @@ object TableQuery {
       )
     })
 
-    '{ TableQuery.apply[E](${ cons.asExprOf[Tag => E] }) }
+    '{ TableQuery.apply[E](${ null }) }
   }
 }

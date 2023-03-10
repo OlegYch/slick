@@ -52,6 +52,7 @@ def scaladocSourceUrl(dir: String) =
 def slickGeneralSettings =
   Seq(
     repoKind := (if (version.value.trim.endsWith("SNAPSHOT")) "snapshots" else "releases"),
+    logLevel := Level.Error,
     publishTo :=
       (repoKind.value match {
         case "snapshots" => Some("snapshots" at "https://oss.sonatype.org/content/repositories/snapshots")
@@ -159,73 +160,74 @@ lazy val testkit =
     .in(file("slick-testkit"))
     .configs(DocTest)
     .dependsOn(slick, codegen % "compile->compile", hikaricp)
-    .settings(
-      slickGeneralSettings,
-      compilerDependencySetting("provided"),
-      inConfig(DocTest)(Defaults.testSettings),
-      TypeProviders.codegenSettings,
-      extTarget("testkit"),
-      name := "Slick-TestKit",
-      description := "Test Kit for Slick (Scala Language-Integrated Connection Kit)",
-      scaladocSourceUrl("slick-testkit"),
-      testOptions +=
-        Tests.Argument(
-          Some(TestFrameworks.JUnit),
-          List("-q", "-v", "-s", "-a", "-Djava.awt.headless=true") ++
-            (if (sys.env.get("GITHUB_ACTIONS").contains("true"))
-              Some("--run-listener=com.typesafe.slick.testkit.util.GitHubActionsRunListener")
-            else
-              None)
-        ),
-      //scalacOptions in Compile += "-Yreify-copypaste",
-      libraryDependencies ++=
-        Dependencies.junit ++:
-          (Dependencies.reactiveStreamsTCK % Test) +:
-          (Dependencies.logback +: Dependencies.testDBs).map(_ % Test) ++:
-          (Dependencies.logback +: Dependencies.testDBs).map(_ % "codegen"),
-      run / fork := true,
-      //connectInput in run := true,
-      run / javaOptions += "-Dslick.ansiDump=true",
-      //javaOptions in run += "-verbose:gc",
-      // Delete classes in "compile" packages after compiling. (Currently only slick.test.compile.NestedShapeTest)
-      // These are used for compile-time tests and should be recompiled every time.
-      Test / cleanCompileTimeTests := {
-        val products = fileTreeView.value.list(
-          (Test / classDirectory).value.toGlob / ** / "compile" / *
-        ).map(x => x._1.toFile)
-        streams.value.log.info(s"Deleting $products")
-        IO.delete(products)
-      },
-      (Test / cleanCompileTimeTests) := ((Test / cleanCompileTimeTests) triggeredBy (Test / compile)).value,
-      Test / testGrouping := {
-        val re = """slick\.test\.profile\.(.+?)(?:\d\d+)?(?:Disk|Mem|Rownum|SQLJDBC)?Test$""".r
-        (Test / definedTests).value
-          .groupBy(_.name match {
-            case re(name) => name
-            case _        => "other"
-          })
-          .map { case (name, tests) =>
-            new Tests.Group(name, tests, Tests.SubProcess(ForkOptions()), Seq(Tags.Tag(s"test-group-$name") -> 1))
-          }
-          .toSeq
-          .sortBy(_.name)
-      },
-      buildCapabilitiesTable := {
-        val logger = ConsoleLogger()
-        val file = (buildCapabilitiesTable / sourceManaged).value / "capabilities.md"
-        Run.run(
-          mainClass = "com.typesafe.slick.testkit.util.BuildCapabilitiesTable",
-          classpath = (Compile / fullClasspath).value.map(_.data),
-          options = Seq(file.toString),
-          log = logger
-        )(runner.value)
-          .map(_ => file)
-          .get
-      },
-      DocTest / unmanagedSourceDirectories += docDir.value / "code",
-      DocTest / unmanagedResourceDirectories += docDir.value / "code",
-      DocTest / parallelExecution := false
-    )
+    .settings(sources := Nil)
+//    .settings(
+//      slickGeneralSettings,
+//      compilerDependencySetting("provided"),
+//      inConfig(DocTest)(Defaults.testSettings),
+//      TypeProviders.codegenSettings,
+//      extTarget("testkit"),
+//      name := "Slick-TestKit",
+//      description := "Test Kit for Slick (Scala Language-Integrated Connection Kit)",
+//      scaladocSourceUrl("slick-testkit"),
+//      testOptions +=
+//        Tests.Argument(
+//          Some(TestFrameworks.JUnit),
+//          List("-q", "-v", "-s", "-a", "-Djava.awt.headless=true") ++
+//            (if (sys.env.get("GITHUB_ACTIONS").contains("true"))
+//              Some("--run-listener=com.typesafe.slick.testkit.util.GitHubActionsRunListener")
+//            else
+//              None)
+//        ),
+//      //scalacOptions in Compile += "-Yreify-copypaste",
+//      libraryDependencies ++=
+//        Dependencies.junit ++:
+//          (Dependencies.reactiveStreamsTCK % Test) +:
+//          (Dependencies.logback +: Dependencies.testDBs).map(_ % Test) ++:
+//          (Dependencies.logback +: Dependencies.testDBs).map(_ % "codegen"),
+//      run / fork := true,
+//      //connectInput in run := true,
+//      run / javaOptions += "-Dslick.ansiDump=true",
+//      //javaOptions in run += "-verbose:gc",
+//      // Delete classes in "compile" packages after compiling. (Currently only slick.test.compile.NestedShapeTest)
+//      // These are used for compile-time tests and should be recompiled every time.
+//      Test / cleanCompileTimeTests := {
+//        val products = fileTreeView.value.list(
+//          (Test / classDirectory).value.toGlob / ** / "compile" / *
+//        ).map(x => x._1.toFile)
+//        streams.value.log.info(s"Deleting $products")
+//        IO.delete(products)
+//      },
+//      (Test / cleanCompileTimeTests) := ((Test / cleanCompileTimeTests) triggeredBy (Test / compile)).value,
+//      Test / testGrouping := {
+//        val re = """slick\.test\.profile\.(.+?)(?:\d\d+)?(?:Disk|Mem|Rownum|SQLJDBC)?Test$""".r
+//        (Test / definedTests).value
+//          .groupBy(_.name match {
+//            case re(name) => name
+//            case _        => "other"
+//          })
+//          .map { case (name, tests) =>
+//            new Tests.Group(name, tests, Tests.SubProcess(ForkOptions()), Seq(Tags.Tag(s"test-group-$name") -> 1))
+//          }
+//          .toSeq
+//          .sortBy(_.name)
+//      },
+//      buildCapabilitiesTable := {
+//        val logger = ConsoleLogger()
+//        val file = (buildCapabilitiesTable / sourceManaged).value / "capabilities.md"
+//        Run.run(
+//          mainClass = "com.typesafe.slick.testkit.util.BuildCapabilitiesTable",
+//          classpath = (Compile / fullClasspath).value.map(_.data),
+//          options = Seq(file.toString),
+//          log = logger
+//        )(runner.value)
+//          .map(_ => file)
+//          .get
+//      },
+//      DocTest / unmanagedSourceDirectories += docDir.value / "code",
+//      DocTest / unmanagedResourceDirectories += docDir.value / "code",
+//      DocTest / parallelExecution := false
+//    )
 
 lazy val codegen =
   project
@@ -279,60 +281,60 @@ lazy val site: Project =
   project
     .in(file("doc"))
     .enablePlugins(Docs)
-    .settings(
-      description := "Scala Slick documentation",
-      scaladocDirs := Seq(
-        "api" -> (slick / Compile / doc).value,
-        "codegen-api" -> (codegen / Compile / doc).value,
-        "hikaricp-api" -> (hikaricp / Compile / doc).value,
-        "testkit-api" -> (testkit / Compile / doc).value
-      ),
-      buildCompatReport := {
-        val compatReports =
-          (CompatReport / compatReportMarkdown)
-            .all(ScopeFilter(inProjects(slick, codegen, hikaricp, testkit)))
-            .value
-        val file = (buildCompatReport / target).value / "compat-report.md"
-        IO.write(
-          file,
-          if (compatReports.forall(_.trim.isEmpty))
-            "There are no incompatible changes"
-          else
-            compatReports.mkString(
-              "## Incompatible changes\n\n",
-              "\n\n",
-              "\n"
-            )
-        )
-        file
-      },
-      writeVersionToGitHubOutput := {
-        writeToGitHubOutput(version.value, streams.value.log)
-      },
-      writeCompatReportToGitHubOutput := {
-        writeToGitHubOutput(buildCompatReport.value.toString, streams.value.log)
-      },
-      preprocessDocs := {
-        val out = (preprocessDocs / target).value
-
-        val capabilitiesTableFile = (testkit / buildCapabilitiesTable).value
-        IO.copyFile(capabilitiesTableFile, out / capabilitiesTableFile.getName)
-
-        val compatReportFile = buildCompatReport.value
-        IO.copyFile(compatReportFile, out / compatReportFile.getName)
-
-        preprocessDocs.value
-      },
-      (Compile / paradoxMarkdownToHtml / excludeFilter) :=
-        (Compile / paradoxMarkdownToHtml / excludeFilter).value ||
-          globFilter("capabilities.md"),
-      publishArtifact := false,
-      publish := {},
-      publishLocal := {},
-      test := {},
-      testOnly := {},
-      versionPolicyPreviousVersions := Nil
-    )
+//    .settings(
+//      description := "Scala Slick documentation",
+//      scaladocDirs := Seq(
+//        "api" -> (slick / Compile / doc).value,
+//        "codegen-api" -> (codegen / Compile / doc).value,
+//        "hikaricp-api" -> (hikaricp / Compile / doc).value,
+//        "testkit-api" -> (testkit / Compile / doc).value
+//      ),
+//      buildCompatReport := {
+//        val compatReports =
+//          (CompatReport / compatReportMarkdown)
+//            .all(ScopeFilter(inProjects(slick, codegen, hikaricp, testkit)))
+//            .value
+//        val file = (buildCompatReport / target).value / "compat-report.md"
+//        IO.write(
+//          file,
+//          if (compatReports.forall(_.trim.isEmpty))
+//            "There are no incompatible changes"
+//          else
+//            compatReports.mkString(
+//              "## Incompatible changes\n\n",
+//              "\n\n",
+//              "\n"
+//            )
+//        )
+//        file
+//      },
+//      writeVersionToGitHubOutput := {
+//        writeToGitHubOutput(version.value, streams.value.log)
+//      },
+//      writeCompatReportToGitHubOutput := {
+//        writeToGitHubOutput(buildCompatReport.value.toString, streams.value.log)
+//      },
+//      preprocessDocs := {
+//        val out = (preprocessDocs / target).value
+//
+//        val capabilitiesTableFile = (testkit / buildCapabilitiesTable).value
+//        IO.copyFile(capabilitiesTableFile, out / capabilitiesTableFile.getName)
+//
+//        val compatReportFile = buildCompatReport.value
+//        IO.copyFile(compatReportFile, out / compatReportFile.getName)
+//
+//        preprocessDocs.value
+//      },
+//      (Compile / paradoxMarkdownToHtml / excludeFilter) :=
+//        (Compile / paradoxMarkdownToHtml / excludeFilter).value ||
+//          globFilter("capabilities.md"),
+//      publishArtifact := false,
+//      publish := {},
+//      publishLocal := {},
+//      test := {},
+//      testOnly := {},
+//      versionPolicyPreviousVersions := Nil
+//    )
 
 lazy val root =
   project

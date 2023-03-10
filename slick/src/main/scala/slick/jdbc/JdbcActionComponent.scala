@@ -622,7 +622,7 @@ trait JdbcActionComponent extends SqlActionComponent { self: JdbcProfile =>
           retManyMultiRowStatement(st, values, count)
         }
 
-      def run(ctx: Backend#Context, sql: Vector[String]) =
+      def run(ctx: slick.jdbc.JdbcBackend#JdbcActionContext, sql: Vector[String]) =
         rowsPerStatement match {
           case RowsPerStatement.One =>
             values match {
@@ -699,7 +699,7 @@ trait JdbcActionComponent extends SqlActionComponent { self: JdbcProfile =>
       extends MultiInsertAction(compiled.upsert, values, rowsPerStatement)
 
     class InsertQueryAction(sbr: SQLBuilder.Result, param: Any) extends SimpleJdbcProfileAction[QueryInsertResult]("InsertQueryAction", Vector(sbr.sql)) {
-      def run(ctx: JdbcBackend#JdbcActionContext, sql: Vector[String]) = preparedInsert(sql.head, ctx.session) { st =>
+      def run(ctx: slick.jdbc.JdbcBackend#JdbcActionContext, sql: Vector[String]) = preparedInsert(sql.head, ctx.session) { st =>
         st.clearParameters()
         sbr.setter(st, 1, param)
         retQuery(st, st.executeUpdate())
