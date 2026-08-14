@@ -159,8 +159,8 @@ sealed abstract class GenericTest[TDB >: Null <: TestDB](implicit TdbClass: Clas
     } finally set(old)
   }
 
-  final def mark[R, S <: NoStream, E <: Effect](id: String, f: => DBIOAction[R, S, E]): DBIOAction[R, S, E] =
-    mark[DBIOAction[R, S, E]](id, f.named(id))
+  final def mark[R, S <: NoStream, E <: Effect](id: String, f: => DBIOAction[S, E, R]): DBIOAction[S, E, R] =
+    mark[DBIOAction[S, E, R]](id, f.named(id))
 
   def assertNesting(q: Rep[?], exp: Int): Unit = {
     import slick.ast.*
@@ -224,9 +224,9 @@ abstract class AsyncTest[TDB >: Null <: TestDB](implicit TdbClass: ClassTag[TDB]
     def getDumpInfo = DumpInfo(name = "<GetStatementParameters>")
   }
 
-  def ifCap[E <: Effect, R](caps: Capability*)(f: => DBIOAction[R, NoStream, E]): DBIOAction[Unit, NoStream, E] =
+  def ifCap[E <: Effect, R](caps: Capability*)(f: => DBIOAction[NoStream, E, R]): DBIOAction[NoStream, E, Unit] =
     if(caps.forall(c => tdb.capabilities.contains(c))) f.andThen(DBIO.successful(())) else DBIO.successful(())
-  def ifNotCap[E <: Effect, R](caps: Capability*)(f: => DBIOAction[R, NoStream, E]): DBIOAction[Unit, NoStream, E] =
+  def ifNotCap[E <: Effect, R](caps: Capability*)(f: => DBIOAction[NoStream, E, R]): DBIOAction[NoStream, E, Unit] =
     if(!caps.forall(c => tdb.capabilities.contains(c))) f.andThen(DBIO.successful(())) else DBIO.successful(())
 
   def ifCapF[R](caps: Capability*)(f: => IO[R]): IO[Unit] =
@@ -239,7 +239,7 @@ abstract class AsyncTest[TDB >: Null <: TestDB](implicit TdbClass: ClassTag[TDB]
   def ifNotCapU[T](caps: Capability*)(f: => T): Unit =
     if(!caps.forall(c => tdb.capabilities.contains(c))) f
 
-  def seq[E <: Effect](actions: DBIOAction[?, NoStream, E]*): DBIOAction[Unit, NoStream, E] = DBIO.seq[E](actions: _*)
+  def seq[E <: Effect](actions: DBIOAction[NoStream, E, ?]*): DBIOAction[NoStream, E, Unit] = DBIO.seq[E](actions: _*)
 
   /** Consume a Stream and materialize it as a Vector. */
   def materialize[T](p: Stream[IO, T]): IO[Vector[T]] =
@@ -300,12 +300,12 @@ abstract class AsyncTest[TDB >: Null <: TestDB](implicit TdbClass: ClassTag[TDB]
     }
   }
 
-  implicit class DBIOActionExtensionMethods[T, +S <: NoStream, -E <: Effect](action: DBIOAction[T, S, E]) {
+  implicit class DBIOActionExtensionMethods[T, +S <: NoStream, -E <: Effect](action: DBIOAction[S, E, T]) {
     def shouldYield(t: T) = action.map(_.shouldBe(t))
   }
 
   implicit class CollectionDBIOActionExtensionMethods[T, +S <: NoStream, -E <: Effect](action:
-                                                                                       DBIOAction[Vector[T], S, E]) {
+                                                                                       DBIOAction[S, E, Vector[T]]) {
     def shouldYield(t: Set[T]) = action.map(_.toSet.shouldBe(t))
     def shouldYield(t: Seq[T]) = action.map(_.shouldBe(t))
     def shouldYield(t: List[T]) = action.map(_.toList.shouldBe(t))

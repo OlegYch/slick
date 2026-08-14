@@ -288,7 +288,7 @@ class JdbcMiscTest extends AsyncTest[JdbcTestDB] {
     // Test mechanics: we capture the Option[Throwable] passed to the cleanup function
     // by using cleanUp directly rather than andFinally, so we can inspect the error arg.
     val cleanupError = new AtomicReference[Option[Throwable]](None)
-    val recordCleanup: Option[Throwable] => DBIOAction[Unit, NoStream, Effect] =
+    val recordCleanup: Option[Throwable] => DBIOAction[NoStream, Effect, Unit] =
       err => DBIO.successful(()).map { _ =>
         cleanupCalled.set(true)
         cleanupError.set(err)
@@ -353,7 +353,7 @@ class JdbcMiscTest extends AsyncTest[JdbcTestDB] {
     val t = TableQuery[T]
 
     val cleanupException = new RuntimeException("deliberate cleanup failure on success")
-    val failingCleanup: Option[Throwable] => DBIOAction[Unit, NoStream, Effect] =
+    val failingCleanup: Option[Throwable] => DBIOAction[NoStream, Effect, Unit] =
       _ => DBIO.failed(cleanupException)
 
     // keepFailure = true is the critical flag: it was incorrectly masking cleanup failures
@@ -403,10 +403,10 @@ class JdbcMiscTest extends AsyncTest[JdbcTestDB] {
     val outerCleanupCalled = new AtomicBoolean(false)
     val outerCleanupError  = new AtomicReference[Option[Throwable]](None)
 
-    val innerCleanup: Option[Throwable] => DBIOAction[Unit, NoStream, Effect] =
+    val innerCleanup: Option[Throwable] => DBIOAction[NoStream, Effect, Unit] =
       _ => DBIO.failed(innerException)
 
-    val outerCleanup: Option[Throwable] => DBIOAction[Unit, NoStream, Effect] =
+    val outerCleanup: Option[Throwable] => DBIOAction[NoStream, Effect, Unit] =
       err => DBIO.successful(()).map { _ =>
         outerCleanupCalled.set(true)
         outerCleanupError.set(err)
@@ -473,7 +473,7 @@ class JdbcMiscTest extends AsyncTest[JdbcTestDB] {
       firstRowDeferred <- Deferred[IO, Unit]
       cleanupLatch      = new CountDownLatch(1)
 
-      recordCleanup: (Option[Throwable] => DBIOAction[Unit, NoStream, Effect]) =
+      recordCleanup: (Option[Throwable] => DBIOAction[NoStream, Effect, Unit]) =
         err => DBIO.successful(()).map { _ =>
           cleanupCalled.set(true)
           cleanupError.set(err)

@@ -14,13 +14,13 @@ trait ActionListener[F[_]] {
     * `H` is intentionally opaque: listeners can only sequence instrumentation around `exec`.
     * They cannot construct a replacement result based on `H`.
     */
-  def around[R, H](action: DBIOAction[R, _, _], exec: F[H]): F[H]
+  def around[R, H](action: DBIOAction[_, _, R], exec: F[H]): F[H]
 }
 
 object ActionListener {
   /** Listener that performs no wrapping. */
   def noop[F[_]]: ActionListener[F] =
     new ActionListener[F] {
-      override def around[R, H](action: DBIOAction[R, _, _], exec: F[H]): F[H] = exec
+      override def around[R, H](action: DBIOAction[_, _, R], exec: F[H]): F[H] = exec
     }
 }

@@ -106,7 +106,7 @@ object Cookbook {
         // For brevity, this run method just demonstrates that we can distinguish the effect type at runtime.
         // In a real application, we could place this method in a class that contains a handle to the primary and a handle
         // to the secondary. Then the callers just call `run(action)` and don't worry about distinguishing the two handles.
-        def run[A, E <: Effect: EffectInfo.ReadOnly](action: DBIOAction[A, NoStream, E]): Unit =
+        def run[A, E <: Effect: EffectInfo.ReadOnly](action: DBIOAction[NoStream, E, A]): Unit =
           if (implicitly[EffectInfo.ReadOnly[E]].isReadOnly) println("Action is read-only, run it on the secondary")
           else println("Action is not read-only, run it on the primary")
 
@@ -115,17 +115,17 @@ object Cookbook {
 
         // Read-only actions.
         // Each of these prints "Action is read-only, run it on the secondary"
-        run(action: DBIOAction[Int, NoStream, Effect.Read])
-        run(action: DBIOAction[Int, NoStream, Effect.Read with Effect.Transactional])
-        run(action: DBIOAction[Int, NoStream, Effect with Effect.Read with Effect.Transactional])
-        run(action: DBIOAction[Int, NoStream, Effect.Transactional with Effect.Read with Effect])
+        run(action: DBIOAction[NoStream, Effect.Read, Int])
+        run(action: DBIOAction[NoStream, Effect.Read with Effect.Transactional, Int])
+        run(action: DBIOAction[NoStream, Effect with Effect.Read with Effect.Transactional, Int])
+        run(action: DBIOAction[NoStream, Effect.Transactional with Effect.Read with Effect, Int])
 
         // Other actions.
         // "Action is not read-only, run it on the primary"
-        run(action: DBIOAction[Int, NoStream, Effect])
-        run(action: DBIOAction[Int, NoStream, Effect.Write])
-        run(action: DBIOAction[Int, NoStream, Effect.Schema])
-        run(action: DBIOAction[Int, NoStream, Effect.All])
+        run(action: DBIOAction[NoStream, Effect, Int])
+        run(action: DBIOAction[NoStream, Effect.Write, Int])
+        run(action: DBIOAction[NoStream, Effect.Schema, Int])
+        run(action: DBIOAction[NoStream, Effect.All, Int])
         //#exampleDistinguishDBIOActionsByEffectTypeAtRuntime
     }
   }

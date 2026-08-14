@@ -18,7 +18,7 @@ trait Database extends slick.Database[IO, Database.StreamIO] {
     * If the same `IO` value is run multiple times, each run performs a fresh, independent
     * execution of the action.
     */
-  override def run[R](a: DBIOAction[R, NoStream, Nothing]): IO[R]
+  override def run[R](a: DBIOAction[NoStream, Nothing, R]): IO[R]
 
   /**
     * Open a streaming action as an `fs2.Stream[IO, T]`.
@@ -29,7 +29,7 @@ trait Database extends slick.Database[IO, Database.StreamIO] {
     * If the same stream value is consumed multiple times, each consumption performs a fresh,
     * independent execution of the action.
     */
-  override def stream[T](a: DBIOAction[?, Streaming[T], Nothing]): fs2.Stream[IO, T]
+  override def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): fs2.Stream[IO, T]
 }
 
 object Database {
@@ -45,10 +45,10 @@ object Database {
     */
   def fromCore(db: slick.basic.BasicBackend#BasicDatabaseDef[IO]): Database =
     new Database {
-      override def run[R](a: DBIOAction[R, NoStream, Nothing]): IO[R] =
+      override def run[R](a: DBIOAction[NoStream, Nothing, R]): IO[R] =
         db.run(a)
 
-      override def stream[T](a: DBIOAction[?, Streaming[T], Nothing]): fs2.Stream[IO, T] =
+      override def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): fs2.Stream[IO, T] =
         fs2.Stream.resource(db.stream(a)).flatMap { it =>
           // chunkSize = 1 is required by mutators since they require the underlying
           // iterator doesn't advance beyond what the mutator object represents

@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory
 trait BasicBackend { self =>
   protected lazy val actionLogger = new SlickLogger(LoggerFactory.getLogger(classOf[BasicBackend].getName+".action"))
 
-  protected[this] def logAction(a: DBIOAction[?, NoStream, Nothing]): Unit = {
+  protected[this] def logAction(a: DBIOAction[NoStream, Nothing, ?]): Unit = {
     if (actionLogger.isDebugEnabled && a.isLogged) {
       val logA = a.nonFusedEquivalentAction
       val aPrefix = if (a eq logA) "" else "[fused] "
@@ -40,8 +40,8 @@ trait BasicBackend { self =>
 
   private[this] lazy val defaultActionLoggerAny: ActionListener[AnyK] =
     new ActionListener[AnyK] {
-      override def around[R, H](a: DBIOAction[R, _, _], exec: Any): Any = {
-        logAction(a.asInstanceOf[DBIOAction[?, NoStream, Nothing]])
+      override def around[R, H](a: DBIOAction[_, _, R], exec: Any): Any = {
+        logAction(a.asInstanceOf[DBIOAction[NoStream, Nothing, ?]])
         exec
       }
     }
@@ -146,7 +146,7 @@ trait BasicBackend { self =>
     // ------------------------------------------------------------------
 
     /** Run a DBIOAction and return the result in F[R]. */
-    final def run[R](a: DBIOAction[R, NoStream, Nothing]): F[R] =
+    final def run[R](a: DBIOAction[NoStream, Nothing, R]): F[R] =
       admissionControl.withInflight {
         connectionArbiter.allocateOrdinal.flatMap { ordinal =>
           asyncF.ref(ExecState.initial(ordinal)).flatMap { ctx =>
@@ -163,7 +163,7 @@ trait BasicBackend { self =>
       *   3) session / permit release
       *   4) inflight-release
       */
-    final def stream[T](a: DBIOAction[?, Streaming[T], Nothing]): Resource[F, Iterator[T]] =
+    final def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): Resource[F, Iterator[T]] =
       Resource.makeCase(acquireStreamContextAndIterator(a)) { case ((ctx, it, cleanup), exitCase) =>
         closeStreamIteratorAndRelease(ctx, it, cleanup, exitCase)
       }.map(_._2)
@@ -397,7 +397,7 @@ trait BasicBackend { self =>
       }
     }
 
-    private def acquireStreamContextAndIterator[T](a: DBIOAction[?, Streaming[T], Nothing]): F[(Ref[F, ExecState], CloseableIterator[T], Option[Throwable] => F[Unit])] = {
+    private def acquireStreamContextAndIterator[T](a: DBIOAction[Streaming[T], Nothing, ?]): F[(Ref[F, ExecState], CloseableIterator[T], Option[Throwable] => F[Unit])] = {
       val F = asyncF
       F.uncancelable { _ =>
         val acquire =
@@ -455,7 +455,7 @@ trait BasicBackend { self =>
     }
 
     protected def interpretStream[T](
-      a: DBIOAction[?, Streaming[T], Nothing],
+      a: DBIOAction[Streaming[T], Nothing, ?],
       ctx: Ref[F, ExecState]
     ): F[(CloseableIterator[T], Option[Throwable] => F[Unit])] = {
       val F = asyncF
@@ -477,32 +477,32 @@ trait BasicBackend { self =>
 
         case sa: SynchronousDatabaseAction[?, ?, ?, ?] =>
           interpretStream(
-            sa.nonFusedEquivalentAction.asInstanceOf[DBIOAction[?, Streaming[T], Nothing]],
+            sa.nonFusedEquivalentAction.asInstanceOf[DBIOAction[Streaming[T], Nothing, ?]],
             ctx
           )
 
         case AndThenAction(actions) =>
-          val prefix = actions.init.asInstanceOf[IndexedSeq[DBIOAction[Any, NoStream, Nothing]]]
-          val last = actions.last.asInstanceOf[DBIOAction[?, Streaming[T], Nothing]]
+          val prefix = actions.init.asInstanceOf[IndexedSeq[DBIOAction[NoStream, Nothing, Any]]]
+          val last = actions.last.asInstanceOf[DBIOAction[Streaming[T], Nothing, ?]]
           val runPrefix = prefix.foldLeft(F.unit)((acc, act) => acc >> interpret[Any](act, ctx).void)
           runPrefix >> interpretStream(last, ctx)
 
         case FlatMapAction(base, f) =>
-          interpret[Any](base.asInstanceOf[DBIOAction[Any, NoStream, Nothing]], ctx).flatMap { v =>
-            val next = f.asInstanceOf[Any => DBIOAction[?, Streaming[T], Nothing]](v)
+          interpret[Any](base.asInstanceOf[DBIOAction[NoStream, Nothing, Any]], ctx).flatMap { v =>
+            val next = f.asInstanceOf[Any => DBIOAction[Streaming[T], Nothing, ?]](v)
             interpretStream(next, ctx)
           }
 
         case NamedAction(inner, _) =>
-          interpretStream(inner.asInstanceOf[DBIOAction[?, Streaming[T], Nothing]], ctx)
+          interpretStream(inner.asInstanceOf[DBIOAction[Streaming[T], Nothing, ?]], ctx)
 
         case PinnedSessionAction(inner) =>
           ctx.update(s => s.copy(pinnedDepth = s.pinnedDepth + 1)) >>
-            interpretStream(inner.asInstanceOf[DBIOAction[?, Streaming[T], Nothing]], ctx)
+            interpretStream(inner.asInstanceOf[DBIOAction[Streaming[T], Nothing, ?]], ctx)
 
         case TransactionalAction(inner, isolationLevel) =>
           enterTransactionScope(ctx, isolationLevel) >>
-            interpretStream(inner.asInstanceOf[DBIOAction[?, Streaming[T], Nothing]], ctx)
+            interpretStream(inner.asInstanceOf[DBIOAction[Streaming[T], Nothing, ?]], ctx)
 
         case CleanUpAction(base, f, keepFailure) =>
           // Recurse into the base to get a true streaming iterator plus any nested cleanup.
@@ -516,7 +516,7 @@ trait BasicBackend { self =>
           // If the base itself fails during setup (before an iterator is returned), we run
           // the cleanup immediately with Some(error) before re-raising, matching the
           // semantics of interpret's CleanUpAction handler.
-          interpretStream(base.asInstanceOf[DBIOAction[?, Streaming[T], Nothing]], ctx)
+          interpretStream(base.asInstanceOf[DBIOAction[Streaming[T], Nothing, ?]], ctx)
             .map {
               case (iter, baseCleanup) =>
                 val combinedCleanup: Option[Throwable] => F[Unit] = err =>
@@ -530,7 +530,7 @@ trait BasicBackend { self =>
                     // the original stream error.  This is the same precedence the non-streaming
                     // path uses: the inner outcome becomes the outer's input.
                     val errForOuter = baseResult.left.toOption.orElse(err)
-                    interpret[Any](f(errForOuter).asInstanceOf[DBIOAction[Any, NoStream, Nothing]], ctx)
+                    interpret[Any](f(errForOuter).asInstanceOf[DBIOAction[NoStream, Nothing, Any]], ctx)
                       .attempt
                       .flatMap {
                         // Raise cleanup failure when:
@@ -546,7 +546,7 @@ trait BasicBackend { self =>
                 (iter, combinedCleanup)
             }
             .recoverWith { case setupErr =>
-              interpret[Any](f(Some(setupErr)).asInstanceOf[DBIOAction[Any, NoStream, Nothing]], ctx)
+              interpret[Any](f(Some(setupErr)).asInstanceOf[DBIOAction[NoStream, Nothing, Any]], ctx)
                 .attempt
                 .flatMap {
                   case Left(cleanupErr) if !keepFailure => F.raiseError(cleanupErr)
@@ -559,7 +559,7 @@ trait BasicBackend { self =>
           // regular interpreter, collecting results, and wrapping in a CloseableIterator.
           // This preserves prior behaviour for library users whose DBIOAction subclasses do
           // not match any of the known structural cases above.
-          interpret[Seq[T]](other.asInstanceOf[DBIOAction[Seq[T], NoStream, Nothing]], ctx)
+          interpret[Seq[T]](other.asInstanceOf[DBIOAction[NoStream, Nothing, Seq[T]]], ctx)
             .map(seq => noCleanup(CloseableIterator.wrap(seq.iterator)))
       }
       actionListener.around(a, streamExec)
@@ -586,7 +586,7 @@ trait BasicBackend { self =>
       * - Cancellation triggers rollback via `guaranteeCase`.
       */
     protected def interpret[R](
-      a: DBIOAction[R, NoStream, Nothing],
+      a: DBIOAction[NoStream, Nothing, R],
       ctx: Ref[F, ExecState]
     ): F[R] = {
       val F = asyncF
@@ -607,16 +607,16 @@ trait BasicBackend { self =>
             fa.asInstanceOf[F[R]]
 
           case FlatMapAction(base, f) =>
-            interpret[Any](base.asInstanceOf[DBIOAction[Any, NoStream, Nothing]], ctx)
+            interpret[Any](base.asInstanceOf[DBIOAction[NoStream, Nothing, Any]], ctx)
               .flatMap { v =>
-                val next = f.asInstanceOf[Any => DBIOAction[R, NoStream, Nothing]](v)
+                val next = f.asInstanceOf[Any => DBIOAction[NoStream, Nothing, R]](v)
                 interpret[R](next, ctx)
               }
 
           case AndThenAction(actions) =>
             val last = actions.length - 1
             def run(pos: Int): F[Any] = {
-              val fi = interpret[Any](actions(pos).asInstanceOf[DBIOAction[Any, NoStream, Nothing]], ctx)
+              val fi = interpret[Any](actions(pos).asInstanceOf[DBIOAction[NoStream, Nothing, Any]], ctx)
               if (pos == last) fi
               else fi.flatMap(_ => run(pos + 1))
             }
@@ -627,7 +627,7 @@ trait BasicBackend { self =>
             def run(pos: Int, acc: Vector[Any]): F[Vector[Any]] = {
               if (pos == len) F.pure(acc)
               else
-                interpret[Any](actions(pos).asInstanceOf[DBIOAction[Any, NoStream, Nothing]], ctx)
+                interpret[Any](actions(pos).asInstanceOf[DBIOAction[NoStream, Nothing, Any]], ctx)
                   .flatMap(v => run(pos + 1, acc :+ v))
             }
             run(0, Vector.empty).map { results =>
@@ -644,26 +644,26 @@ trait BasicBackend { self =>
             // On cancellation, f receives Some(CancellationException) so user code can
             // distinguish cancel from normal errors.
             F.uncancelable { poll =>
-              poll(interpret[R](base.asInstanceOf[DBIOAction[R, NoStream, Nothing]], ctx))
+              poll(interpret[R](base.asInstanceOf[DBIOAction[NoStream, Nothing, R]], ctx))
                 .guaranteeCase {
                   case Outcome.Succeeded(_) =>
-                    interpret[Any](f(None).asInstanceOf[DBIOAction[Any, NoStream, Nothing]], ctx).void
+                    interpret[Any](f(None).asInstanceOf[DBIOAction[NoStream, Nothing, Any]], ctx).void
                   case Outcome.Errored(err) =>
                     // Run cleanup with the error. Re-raise original unless keepFailure=false
                     // and cleanup itself also fails (cleanup error takes precedence).
-                    interpret[Any](f(Some(err)).asInstanceOf[DBIOAction[Any, NoStream, Nothing]], ctx).void
+                    interpret[Any](f(Some(err)).asInstanceOf[DBIOAction[NoStream, Nothing, Any]], ctx).void
                       .recoverWith { case cleanupErr if !keepFailure => F.raiseError(cleanupErr) }
                   case Outcome.Canceled() =>
                     // Run cleanup with a CancellationException so user code can react to cancel.
                     // Errors from cleanup are swallowed so as not to mask the cancellation.
                     interpret[Any](
                       f(Some(new java.util.concurrent.CancellationException("DBIO action canceled")))
-                        .asInstanceOf[DBIOAction[Any, NoStream, Nothing]], ctx).attempt.void
+                        .asInstanceOf[DBIOAction[NoStream, Nothing, Any]], ctx).attempt.void
                 }
             }
 
           case FailedAction(inner) =>
-            interpret[Any](inner.asInstanceOf[DBIOAction[Any, NoStream, Nothing]], ctx)
+            interpret[Any](inner.asInstanceOf[DBIOAction[NoStream, Nothing, Any]], ctx)
               .attempt
               .flatMap {
                 case Left(t)  => F.pure(t.asInstanceOf[R])
@@ -671,7 +671,7 @@ trait BasicBackend { self =>
               }
 
           case AsTryAction(inner) =>
-            interpret[Any](inner.asInstanceOf[DBIOAction[Any, NoStream, Nothing]], ctx)
+            interpret[Any](inner.asInstanceOf[DBIOAction[NoStream, Nothing, Any]], ctx)
               .attempt
               .map {
                 case Right(v) => scala.util.Success(v).asInstanceOf[R]
@@ -679,7 +679,7 @@ trait BasicBackend { self =>
               }
 
           case NamedAction(inner, _) =>
-            interpret[R](inner.asInstanceOf[DBIOAction[R, NoStream, Nothing]], ctx)
+            interpret[R](inner.asInstanceOf[DBIOAction[NoStream, Nothing, R]], ctx)
 
           case TransactionalAction(inner, isolationLevel) =>
             // uncancelable ensures enterTransactionScope and guaranteeCase registration are
@@ -687,7 +687,7 @@ trait BasicBackend { self =>
             // with no finalizer to decrement it.  The inner action runs cancelably via poll.
             asyncF.uncancelable { poll =>
               enterTransactionScope(ctx, isolationLevel) >>
-              poll(interpret[R](inner.asInstanceOf[DBIOAction[R, NoStream, Nothing]], ctx))
+              poll(interpret[R](inner.asInstanceOf[DBIOAction[NoStream, Nothing, R]], ctx))
                 .guaranteeCase { outcome =>
                   exitTransactionScope(ctx, succeeded = outcome.isSuccess)
                 }
@@ -700,7 +700,7 @@ trait BasicBackend { self =>
             // preventing releaseSession from ever running.  Inner action runs cancelably via poll.
             asyncF.uncancelable { poll =>
               ctx.update(s => s.copy(pinnedDepth = s.pinnedDepth + 1)) >>
-              poll(interpret[R](inner.asInstanceOf[DBIOAction[R, NoStream, Nothing]], ctx))
+              poll(interpret[R](inner.asInstanceOf[DBIOAction[NoStream, Nothing, R]], ctx))
                 .guarantee {
                   ctx.update(s => s.copy(pinnedDepth = s.pinnedDepth - 1)) >>
                   ctx.get.flatMap { s =>

@@ -179,9 +179,9 @@ abstract class JdbcTestDB(val confName: String) extends SqlTestDB {
       )
     } yield ()
   }
-  override def assertTablesExist(tables: String*): DBIOAction[Unit, NoStream, Effect] =
+  override def assertTablesExist(tables: String*): DBIOAction[NoStream, Effect, Unit] =
     DBIO.seq(tables.map(t => sql"""select 1 from #${profile.quoteIdentifier(t)} where 1 < 0""".as[Int]) *)
-  override def assertNotTablesExist(tables: String*): DBIOAction[Unit, NoStream, Effect] =
+  override def assertNotTablesExist(tables: String*): DBIOAction[NoStream, Effect, Unit] =
     DBIO.seq(tables.map(t => sql"""select 1 from #${profile.quoteIdentifier(t)} where 1 < 0""".as[Int].failed) *)
 
   /** Create a single-session database that reuses an existing connection.
@@ -199,7 +199,7 @@ abstract class JdbcTestDB(val confName: String) extends SqlTestDB {
     profile.backend.makeDatabase[IO](dc).unsafeRunSync()
   }
 
-  final def blockingRunOnSession[R](a: DBIOAction[R, NoStream, Nothing])
+  final def blockingRunOnSession[R](a: DBIOAction[NoStream, Nothing, R])
                                    (implicit session: profile.backend.Session): R = {
     val db = createSingleSessionDatabase(session)
     db.run(a).unsafeRunSync()

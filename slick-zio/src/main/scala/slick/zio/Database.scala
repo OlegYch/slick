@@ -21,7 +21,7 @@ trait Database extends slick.Database[Task, Database.StreamTask] {
     * If the same `Task` value is run multiple times, each run performs a fresh, independent
     * execution of the action.
     */
-  override def run[R](a: DBIOAction[R, NoStream, Nothing]): Task[R]
+  override def run[R](a: DBIOAction[NoStream, Nothing, R]): Task[R]
 
   /**
     * Open a streaming action as a `ZStream[Any, Throwable, T]`.
@@ -32,7 +32,7 @@ trait Database extends slick.Database[Task, Database.StreamTask] {
     * If the same stream value is consumed multiple times, each consumption performs a fresh,
     * independent execution of the action.
     */
-  override def stream[T](a: DBIOAction[?, Streaming[T], Nothing]): ZStream[Any, Throwable, T]
+  override def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): ZStream[Any, Throwable, T]
 }
 
 object Database {
@@ -48,10 +48,10 @@ object Database {
     */
   def fromCore(db: slick.basic.BasicBackend#BasicDatabaseDef[Task]): Database =
     new Database {
-      override def run[R](a: DBIOAction[R, NoStream, Nothing]): Task[R] =
+      override def run[R](a: DBIOAction[NoStream, Nothing, R]): Task[R] =
         db.run(a)
 
-      override def stream[T](a: DBIOAction[?, Streaming[T], Nothing]): ZStream[Any, Throwable, T] =
+      override def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): ZStream[Any, Throwable, T] =
         ZStream.unwrapScoped(db.stream(a).toScopedZIO.map(fromIteratorNoBuffering))
 
       override def controlStatus: Task[ControlStatus] =
