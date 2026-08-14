@@ -25,9 +25,9 @@ import cats.effect.unsafe.implicits.global
 import scala.util.{Failure, Success}
 
 class DBIOInstancesTest extends AnyFunSuite with Matchers with FunSuiteDiscipline with Checkers with AllInstances
-//  with DBIOInstances
-//  with DBIOInstances2
-  with DBIOInstances3
+  with DBIOInstances
+  with DBIOInstances2
+//  with DBIOInstances3
   {
   private val db = slick.memory.MemoryProfile.backend.Database()
 
