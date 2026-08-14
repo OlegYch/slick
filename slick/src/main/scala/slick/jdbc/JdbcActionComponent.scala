@@ -54,7 +54,7 @@ trait JdbcActionComponent extends SqlActionComponent { self: JdbcProfile =>
     def getDumpInfo = DumpInfo(name = "SetTransactionIsolation")
   }
 
-  class JdbcActionExtensionMethods[E <: Effect, R, S <: NoStream](a: DBIOAction[R, S, E]) {
+  class JdbcActionExtensionMethods[E <: Effect, R, S <: NoStream](a: DBIOAction[S, E, R]) {
 
     /** Run this Action transactionally. This does not guarantee failures to be atomic in the
       * presence of error handling combinators. If multiple `transactionally` combinators are
@@ -63,7 +63,7 @@ trait JdbcActionComponent extends SqlActionComponent { self: JdbcProfile =>
       * Depending on the outcome of running the Action it surrounds, the transaction is committed if
       * the wrapped Action succeeds, or rolled back if the wrapped Action fails or the fiber is
       * cancelled. */
-    def transactionally: DBIOAction[R, S, E with Effect.Transactional] =
+    def transactionally: DBIOAction[S, E with Effect.Transactional, R] =
       TransactionalAction[R, S, E with Effect.Transactional](a, None)
 
     /** Run this Action transactionally with the specified transaction isolation level.
@@ -74,7 +74,7 @@ trait JdbcActionComponent extends SqlActionComponent { self: JdbcProfile =>
       *
       * The isolation level is configured when the outermost transaction scope is established.
       */
-    def transactionally(ti: TransactionIsolation): DBIOAction[R, S, E with Effect.Transactional] =
+    def transactionally(ti: TransactionIsolation): DBIOAction[S, E with Effect.Transactional, R] =
       TransactionalAction[R, S, E with Effect.Transactional](a, Some(ti.intValue))
 
     /** Run this Action with a temporarily changed JDBC transaction isolation level.
@@ -94,7 +94,7 @@ trait JdbcActionComponent extends SqlActionComponent { self: JdbcProfile =>
       * behavior.
       */
     @deprecated("Use transactionally(isolationLevel) for deterministic transaction isolation semantics", "4.0")
-    def withTransactionIsolation(ti: TransactionIsolation): DBIOAction[R, S, E] = {
+    def withTransactionIsolation(ti: TransactionIsolation): DBIOAction[S, E, R] = {
       val isolated =
         (new SetTransactionIsolation(ti.intValue)).flatMap(old => a.andFinally(new SetTransactionIsolation(old)))
       val fused =
@@ -119,7 +119,7 @@ trait JdbcActionComponent extends SqlActionComponent { self: JdbcProfile =>
                                 rsConcurrency: ResultSetConcurrency = null,
                                 rsHoldability: ResultSetHoldability = null,
                                 statementInit: Statement => Unit = null,
-                                fetchSize: Int = 0): DBIOAction[R, S, E] =
+                                fetchSize: Int = 0): DBIOAction[S, E, R] =
       ((new PushStatementParameters(JdbcBackend.StatementParameters(rsType, rsConcurrency, rsHoldability, statementInit, fetchSize))).
         andThen(a).andFinally(PopStatementParameters)).withPinnedSession
   }

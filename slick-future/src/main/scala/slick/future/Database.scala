@@ -19,7 +19,7 @@ trait Database extends slick.Database[Future, DatabasePublisher] {
     *
     * Calling `run` multiple times executes the action multiple times.
     */
-  override def run[R](a: DBIOAction[R, NoStream, Nothing]): Future[R]
+  override def run[R](a: DBIOAction[NoStream, Nothing, R]): Future[R]
 
   /**
     * Open a streaming action as a Reactive Streams [[slick.future.DatabasePublisher]]`[T]`.
@@ -49,7 +49,7 @@ trait Database extends slick.Database[Future, DatabasePublisher] {
     * subsequently signals new demand.  This keeps cursor-bound values valid throughout
     * each `onNext` invocation regardless of how many elements the subscriber requests.
     */
-  override def stream[T](a: DBIOAction[?, Streaming[T], Nothing]): DatabasePublisher[T]
+  override def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): DatabasePublisher[T]
 }
 
 object Database {
@@ -64,10 +64,10 @@ object Database {
     */
   def fromCore(db: slick.basic.BasicBackend#BasicDatabaseDef[IO]): Database =
     new Database {
-      override def run[R](a: DBIOAction[R, NoStream, Nothing]): Future[R] =
+      override def run[R](a: DBIOAction[NoStream, Nothing, R]): Future[R] =
         db.run(a).unsafeToFuture()
 
-      override def stream[T](a: DBIOAction[?, Streaming[T], Nothing]): DatabasePublisher[T] =
+      override def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): DatabasePublisher[T] =
         lazyPublisher(() => {
           val (it, release) = db.stream(a).allocated.unsafeRunSync()
           new DatabasePublisherImpl[T](it, () => release.unsafeRunSync())

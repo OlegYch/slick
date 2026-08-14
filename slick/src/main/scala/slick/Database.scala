@@ -15,7 +15,7 @@ import slick.dbio.{DBIOAction, NoStream, Streaming}
   */
 trait Database[F[_], S[_]] extends Closeable {
   /** Run a `DBIOAction` and return its result in `F[R]`. */
-  def run[R](a: DBIOAction[R, NoStream, Nothing]): F[R]
+  def run[R](a: DBIOAction[NoStream, Nothing, R]): F[R]
 
   /** Open a streaming `DBIOAction` as `S[T]`.
     *
@@ -23,7 +23,7 @@ trait Database[F[_], S[_]] extends Closeable {
     * wrapper implementation, but must ensure backend resources are released
     * when the stream completes, fails, or is canceled.
     */
-  def stream[T](a: DBIOAction[?, Streaming[T], Nothing]): S[T]
+  def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): S[T]
 
   /** Inspect current admission and connection-slot control status. */
   def controlStatus: F[ControlStatus]

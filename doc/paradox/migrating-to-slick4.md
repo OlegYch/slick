@@ -35,7 +35,7 @@ only thing that changes is how you construct the database.
 
 - All query syntax: `users.filter(_.id === 1).result`, `users += row`, `.delete`, `.update`,
   `schema.create`, `schema.createIfNotExists`, plain SQL interpolation (`sql"..."`, `sqlu"..."`)
-- The `DBIOAction[R, S, E]` type and all its combinators: `andThen`, `zip`, `DBIO.seq`,
+- The `DBIOAction[S, E, R]` type and all its combinators: `andThen`, `zip`, `DBIO.seq`,
   `DBIO.sequence`, `DBIO.traverse`, `DBIO.fold`, `asTry`, `failed`, `andFinally`, `cleanUp`,
   `withPinnedSession`, `transactionally`, `named`
 - All profile imports: `import slick.jdbc.PostgresProfile.api.*`

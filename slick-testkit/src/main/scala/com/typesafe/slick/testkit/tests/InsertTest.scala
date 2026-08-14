@@ -269,7 +269,7 @@ class InsertTest extends AsyncTest[JdbcTestDB] {
     DBIO.seq()
   }
 
-  def testInsertOrUpdatePlainWithFuncDefinedPK: DBIOAction[Unit, NoStream, Effect.All] = {
+  def testInsertOrUpdatePlainWithFuncDefinedPK: DBIOAction[NoStream, Effect.All, Unit] = {
     //FIXME remove this after fixed checkInsert issue
     if (tdb.profile.isInstanceOf[DerbyProfile]) return DBIO.successful(())
 
@@ -349,7 +349,7 @@ class InsertTest extends AsyncTest[JdbcTestDB] {
       }
     }
 
-  def testInsertOrUpdateWithInsertedWhen0IsSpecifiedForAutoInc: DBIOAction[Unit, NoStream, Effect.All] =
+  def testInsertOrUpdateWithInsertedWhen0IsSpecifiedForAutoInc: DBIOAction[NoStream, Effect.All, Unit] =
     if (!tdb.profile.capabilities.contains(JdbcCapabilities.insertOrUpdate)) DBIO.successful(()) else {
       case class C(id1: Int, id2: Int)
       class CTable(tag: Tag) extends Table[C](tag, "CTABLE") {
@@ -425,7 +425,7 @@ class InsertTest extends AsyncTest[JdbcTestDB] {
       }
     }
 
-  def testInsertOrUpdateAutoInc: DBIOAction[Unit, NoStream, Effect.All] = {
+  def testInsertOrUpdateAutoInc: DBIOAction[NoStream, Effect.All, Unit] = {
     class T(tag: Tag) extends Table[(Int, String)](tag, "T_MERGE2") {
       def id = column[Int]("ID", O.AutoInc, O.PrimaryKey)
       def name = column[String]("NAME")
@@ -451,7 +451,7 @@ class InsertTest extends AsyncTest[JdbcTestDB] {
   }
 
   // Regression test for https://github.com/slick/slick/issues/1627
-  def testInsertOrUpdateWithPrimaryKeyOnly: DBIOAction[Unit, NoStream, Effect.All] =
+  def testInsertOrUpdateWithPrimaryKeyOnly: DBIOAction[NoStream, Effect.All, Unit] =
     if (!tdb.profile.capabilities.contains(JdbcCapabilities.insertOrUpdateWithPrimaryKeyOnly))
       DBIO.successful(())
     else {
@@ -482,7 +482,7 @@ class InsertTest extends AsyncTest[JdbcTestDB] {
     }
 
   // Regression test for https://github.com/slick/slick/issues/2045
-  def testInsertOrUpdateWithIntegrityError: DBIOAction[Unit, NoStream, Effect.All] = {
+  def testInsertOrUpdateWithIntegrityError: DBIOAction[NoStream, Effect.All, Unit] = {
     case class Book(id: Long, title: String, code: Option[String] = None)
     class BooksTable(tag: Tag) extends Table[Book](tag, "books") {
       def id = column[Long]("id", O.PrimaryKey)
