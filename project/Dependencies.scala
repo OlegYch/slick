@@ -22,6 +22,11 @@ object Dependencies {
         Seq.empty
     }
   }
+  val catsVersion = "2.13.0"
+  val catsCore = "org.typelevel" %% "cats-core" % catsVersion
+  val catsLaws = "org.typelevel" %% "cats-laws" % catsVersion % Test
+  val catsDiscipline = "org.typelevel" %% "discipline-scalatest" % "2.3.0" % Test
+  val scalatest = "org.scalatest" %% "scalatest" % "3.2.20" % Test
   val catsEffect = "org.typelevel" %% "cats-effect" % "3.7-4972921"
   val fs2Core    = "co.fs2"        %% "fs2-core"    % "3.13.0"
   val munitCatsEffect = "org.typelevel" %% "munit-cats-effect" % "2.2.0"
@@ -33,7 +38,7 @@ object Dependencies {
   val zioTest = "dev.zio" %% "zio-test" % zioVersion
   val zioTestSbt = "dev.zio" %% "zio-test-sbt" % zioVersion
 
-  def mainDependencies = Seq(slf4j, typesafeConfig, reactiveStreams, catsEffect, fs2Core)
+  def mainDependencies = Seq(slf4j, typesafeConfig, reactiveStreams, catsCore, catsEffect, fs2Core, catsLaws, catsDiscipline, scalatest)
 
   val junit = Seq(
     "junit" % "junit-dep" % "4.11",
