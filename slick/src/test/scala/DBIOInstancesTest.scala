@@ -19,12 +19,15 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.Checkers
 import org.typelevel.discipline.scalatest.FunSuiteDiscipline
-import slick.dbio.{DBIO, DBIOAction, Effect, NoStream}
+import slick.dbio.{DBIO, DBIOAction, DBIOInstances2, DBIOInstances3, Effect, NoStream}
 import cats.effect.unsafe.implicits.global
 
 import scala.util.{Failure, Success}
 
-class DBIOInstancesTest extends AnyFunSuite with Matchers with FunSuiteDiscipline with Checkers with AllInstances  {
+class DBIOInstancesTest extends AnyFunSuite with Matchers with FunSuiteDiscipline with Checkers with AllInstances
+  with DBIOInstances3
+//  with DBIOInstances2
+  {
   private val db = slick.memory.MemoryProfile.backend.Database()
 
 
@@ -55,13 +58,13 @@ class DBIOInstancesTest extends AnyFunSuite with Matchers with FunSuiteDisciplin
 
   checkAll("DBIO[Int]", MonadErrorTests[DBIO, Throwable].monadError[Int, Int, Int])
 
-//  (0 to 10).toList.traverse{i => DBIO.successful(i)}
-
-//  def monad[F[_] : Monad, A](fa: F[A]): F[A] = fa
-//  val fail1: DBIOAction[String, NoStream, Effect.All] = DBIO.successful("hello")
-//  val fail2 = DBIO.successful("hello")
-//  val success: DBIO[String] = DBIO.successful("hello")
-//  monad(fail1)
-//  monad(fail2)
+  (0 to 10).toList.traverse{i => DBIO.successful(i)}
+//
+  def monad[F[_] : Monad, A](fa: F[A]): F[A] = fa
+  val fail1: DBIOAction[String, NoStream, Effect.All] = DBIO.successful("hello")
+  val fail2 = DBIO.successful("hello")
+  val success: DBIO[String] = DBIO.successful("hello")
+  monad(fail1)
+  monad(fail2)
 }
 
