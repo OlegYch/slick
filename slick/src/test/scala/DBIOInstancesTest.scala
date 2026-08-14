@@ -19,14 +19,15 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.Checkers
 import org.typelevel.discipline.scalatest.FunSuiteDiscipline
-import slick.dbio.{DBIO, DBIOAction, DBIOInstances2, DBIOInstances3, Effect, NoStream}
+import slick.dbio.{DBIO, DBIOAction, DBIOInstances, DBIOInstances3, DBIOInstances2, Effect, NoStream}
 import cats.effect.unsafe.implicits.global
 
 import scala.util.{Failure, Success}
 
 class DBIOInstancesTest extends AnyFunSuite with Matchers with FunSuiteDiscipline with Checkers with AllInstances
-  with DBIOInstances3
+//  with DBIOInstances
 //  with DBIOInstances2
+  with DBIOInstances3
   {
   private val db = slick.memory.MemoryProfile.backend.Database()
 

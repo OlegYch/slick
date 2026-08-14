@@ -175,7 +175,7 @@ sealed trait DBIOAction[+S <: NoStream, -E <: Effect, +R] extends Dumpable {
   def isLogged: Boolean = false
 }
 
-object DBIOAction extends DBIOInstances {
+object DBIOAction {
   private val UnitAction: DBIOAction[NoStream, Effect, Unit] = SuccessAction(())
 
   /** Lift a constant value to a [[DBIOAction]]. */
