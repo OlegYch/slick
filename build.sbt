@@ -479,6 +479,7 @@ lazy val root =
       testOnly := {},
       testAll := {
         Def.sequential(
+          slick / Test / test,
           testkit / Test / test,
           testkit / DocTest / test,
           slickFuture / Test / test,
