@@ -6,7 +6,7 @@ import cats.syntax.all.*
 import scala.util.*
 
 trait DBIOInstances3 {
-  type DBIOAll[R] = DBIOAction[NoStream, Effect, R]
+  type DBIOAll[R] = DBIOAction[R, NoStream, Effect]
   implicit val dbioInstance: MonadError[DBIOAll, Throwable] =
     new MonadError[DBIOAll, Throwable] {
       override def pure[A](x: A): DBIOAll[A] = DBIO.successful(x)

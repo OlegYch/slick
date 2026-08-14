@@ -24,7 +24,10 @@ import cats.effect.unsafe.implicits.global
 
 import scala.util.{Failure, Success}
 
-class DBIOInstancesTest extends AnyFunSuite with Matchers with FunSuiteDiscipline with Checkers with AllInstances  with DBIOInstances3{
+class DBIOInstancesTest extends AnyFunSuite with Matchers with FunSuiteDiscipline with Checkers with AllInstances
+  with DBIOInstances3
+//  with DBIOInstances2
+  {
   private val db = slick.memory.MemoryProfile.backend.Database()
 
 
@@ -58,7 +61,7 @@ class DBIOInstancesTest extends AnyFunSuite with Matchers with FunSuiteDisciplin
   (0 to 10).toList.traverse{i => DBIO.successful(i)}
 
   def monad[F[_] : Monad, A](fa: F[A]): F[A] = fa
-  val fail1: DBIOAction[NoStream, Effect.All, String] = DBIO.successful("hello")
+  val fail1: DBIOAction[String, NoStream, Effect.All] = DBIO.successful("hello")
   val fail2 = DBIO.successful("hello")
   val success: DBIO[String] = DBIO.successful("hello")
   monad(fail1.flatMap(_ => fail2))
