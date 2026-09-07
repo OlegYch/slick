@@ -1,6 +1,6 @@
 package slick.dbio
 
-/** A phantom type for annotating DBIOActions with specific effects (e.g. `Write` or
+/** A phantom type for annotating SlickActions with specific effects (e.g. `Write` or
   * `Transactional`). Effects can be composed through intersection types (e.g.
   * `Write with Transactional`. The standard Slick back-ends do not restrict the evaluation of
   * actions based on effects but they can be used in user-level code (e.g. for ensuring that all
@@ -8,19 +8,19 @@ package slick.dbio
 trait Effect
 
 object Effect {
-  /** Effect for DBIOActions that read from the database ("DQL") */
+  /** Effect for SlickActions that read from the database ("DQL") */
   trait Read extends Effect
-  /** Effect for DBIOActions that write to the database ("DML") */
+  /** Effect for SlickActions that write to the database ("DML") */
   trait Write extends Effect
-  /** Effect for DBIOActions that manipulate a database schema ("DDL") */
+  /** Effect for SlickActions that manipulate a database schema ("DDL") */
   trait Schema extends Effect
-  /** Effect for transactional DBIOActions ("DTL") */
+  /** Effect for transactional SlickActions ("DTL") */
   trait Transactional extends Effect
 
   /** The bottom type of all standard effects. It is used by the `DBIO` and `StreamingDBIO`
     * type aliases instead of `Nothing` because the compiler does not properly infer `Nothing`
     * where needed. You can still introduce your own custom effect types but they will not be
     * used by `DBIO` and `StreamingDBIO`, so you either have to define your own type aliases
-    * or spell out the proper `DBIOAction` types in type annotations. */
+    * or spell out the proper `SlickAction` types in type annotations. */
   trait All extends Read with Write with Schema with Transactional
 }

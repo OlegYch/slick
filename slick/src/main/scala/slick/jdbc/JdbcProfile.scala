@@ -93,7 +93,7 @@ trait JdbcProfile extends SqlProfile with JdbcActionComponent
                                                                        ): UpdateActionExtensionMethods[RU] =
       createUpdateActionExtensionMethods(c.compiledUpdate, c.param)
 
-    implicit def jdbcActionExtensionMethods[E <: Effect, R, S <: NoStream](a: DBIOAction[S, E, R]
+    implicit def jdbcActionExtensionMethods[E <: Effect, R, S <: NoStream](a: SlickAction[S, E, R]
                                                                           ): JdbcActionExtensionMethods[E, R, S] =
       new JdbcActionExtensionMethods[E, R, S](a)
 

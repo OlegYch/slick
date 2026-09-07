@@ -7,24 +7,24 @@ import cats.effect.IO
 
 import slick.ControlStatus
 import slick.DatabaseConfig
-import slick.dbio.{DBIOAction, NoStream, Streaming}
+import slick.dbio.{SlickAction, NoStream, Streaming}
 
 /** Future/Reactive Streams facade for Slick's effect-polymorphic database API. */
 trait Database extends slick.Database[Future, DatabasePublisher] {
   /**
     * Run a non-streaming action as `Future[R]`.
     *
-    * Calling `run` executes the underlying [[slick.dbio.DBIOAction]] immediately and returns a `Future`
+    * Calling `run` executes the underlying [[slick.dbio.SlickAction]] immediately and returns a `Future`
     * for its completion.
     *
     * Calling `run` multiple times executes the action multiple times.
     */
-  override def run[R](a: DBIOAction[NoStream, Nothing, R]): Future[R]
+  override def run[R](a: SlickAction[NoStream, Nothing, R]): Future[R]
 
   /**
     * Open a streaming action as a Reactive Streams [[slick.future.DatabasePublisher]]`[T]`.
     *
-    * The underlying [[slick.dbio.DBIOAction]] does not start until a `Subscriber` subscribes
+    * The underlying [[slick.dbio.SlickAction]] does not start until a `Subscriber` subscribes
     * to the returned publisher.  Each subscription triggers an independent
     * execution of the action — subscribing to the same publisher twice runs the
     * action twice and produces two independent result streams.
@@ -49,7 +49,7 @@ trait Database extends slick.Database[Future, DatabasePublisher] {
     * subsequently signals new demand.  This keeps cursor-bound values valid throughout
     * each `onNext` invocation regardless of how many elements the subscriber requests.
     */
-  override def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): DatabasePublisher[T]
+  override def stream[T](a: SlickAction[Streaming[T], Nothing, ?]): DatabasePublisher[T]
 }
 
 object Database {
@@ -64,10 +64,10 @@ object Database {
     */
   def fromCore(db: slick.basic.BasicBackend#BasicDatabaseDef[IO]): Database =
     new Database {
-      override def run[R](a: DBIOAction[NoStream, Nothing, R]): Future[R] =
+      override def run[R](a: SlickAction[NoStream, Nothing, R]): Future[R] =
         db.run(a).unsafeToFuture()
 
-      override def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): DatabasePublisher[T] =
+      override def stream[T](a: SlickAction[Streaming[T], Nothing, ?]): DatabasePublisher[T] =
         lazyPublisher(() => {
           val (it, release) = db.stream(a).allocated.unsafeRunSync()
           new DatabasePublisherImpl[T](it, () => release.unsafeRunSync())

@@ -10,8 +10,7 @@ For upgrade notes between Slick 3.x minor versions, see @ref:[Slick 3.x Upgrade 
 @@@
 
 Slick 4 replaces the `Database.forXxx` factory methods and `scala.concurrent.Future`-returning
-execution layer with a new, three-facade API. The query DSL, SQL compiler pipeline,
-`DBIOAction` type and phantom effect system (`Effect.Read`/`Write`/`Schema`/`Transactional`), all
+execution layer with a new, three-facade API. The query DSL, SQL compiler pipeline and phantom effect system (`Effect.Read`/`Write`/`Schema`/`Transactional`), all
 database profiles, and all SQL generation code are **completely unchanged**. If your application
 only composes queries and runs them, the migration is largely mechanical.
 
@@ -35,7 +34,7 @@ only thing that changes is how you construct the database.
 
 - All query syntax: `users.filter(_.id === 1).result`, `users += row`, `.delete`, `.update`,
   `schema.create`, `schema.createIfNotExists`, plain SQL interpolation (`sql"..."`, `sqlu"..."`)
-- The `DBIOAction[S, E, R]` type and all its combinators: `andThen`, `zip`, `DBIO.seq`,
+- The `DBIOAction[R, S, E]` type and all its combinators: `andThen`, `zip`, `DBIO.seq`,
   `DBIO.sequence`, `DBIO.traverse`, `DBIO.fold`, `asTry`, `failed`, `andFinally`, `cleanUp`,
   `withPinnedSession`, `transactionally`, `named`
 - All profile imports: `import slick.jdbc.PostgresProfile.api.*`
@@ -46,6 +45,10 @@ only thing that changes is how you construct the database.
   contains `import scala.concurrent.ExecutionContext` (added by older codegen versions), that
   import is now unused — remove it or regenerate.
 
+### New
+- `SlickAction[S, E, R]` replaces `DBIOAction[R, S, E]` usage, `DBIOAction[R, S, E]` is now a type alias kept for compatibility 
+- On scala 2.13 and 3 `SlickAction` and `DBIO` define typeclass instances for `cats.MonadError`, `cats.Monoid` etc
+
 ### Changed (breaking)
 
 | Area | Before (Slick 3) | After (Slick 4, `slick-future`) |
@@ -55,7 +58,7 @@ only thing that changes is how you construct the database.
 | `Database` construction | `Database.forConfig("p")` | `DatabaseConfig.forConfig[P]("p")` → `Database.open(dc)` or `Database.use(dc)(f)` |
 | `db.shutdown` | `Future[Unit]` | **removed** — use `Database.use` or `db.close()` |
 | `AsyncExecutor` | required for thread pool config | **removed** entirely |
-| `map`/`flatMap` on `DBIOAction` | require `(implicit ec: ExecutionContext)` | no EC parameter |
+| `map`/`flatMap` on `SlickAction` | require `(implicit ec: ExecutionContext)` | no EC parameter |
 | `DBIO.from(x)` | lifts a `Future[R]` | lifts a `Future[R]` — **unchanged** in `slick-future` |
 | `GetResult.apply` / `SetParameter.apply` | function parameter is `implicit` | regular parameter; `GetResult(r => ...)` and `SetParameter[T]((v, pp) => ...)` are unchanged. `GetResult(using r => ...)` / `SetParameter(using (v, pp) => ...)` (Scala 3) no longer compile — drop the `using`. Summoning a `GetResult[T]` from an implicit function via `GetResult[T]` (no argument) also no longer works |
 
@@ -207,7 +210,7 @@ Pekko Streams, etc.) continues to work without changes.
 
 ---
 
-## 4. `ExecutionContext` removal from `DBIOAction` combinators
+## 4. `ExecutionContext` removal from `SlickAction` combinators
 
 `map`, `flatMap`, `filter`, `withFilter`, `cleanUp`, `zipWith`, and `DBIO.fold` **no longer
 accept an implicit `ExecutionContext`**. Remove all EC imports and implicits that were only
@@ -247,7 +250,7 @@ DBIO.fold(actions, zero)(f)
 
 ## 5. `DBIO.from`
 
-`DBIO.from` continues to lift a `Future[R]` into a `DBIOAction` when using `slick-future`.
+`DBIO.from` continues to lift a `Future[R]` into a `SlickAction` when using `slick-future`.
 No change is needed here.
 
 ```scala
@@ -412,7 +415,7 @@ as in Slick 3. The only breaking change is the removal of the `bufferNext` overl
 |-------------------|-----------------------|
 | `db.stream(a, bufferNext = false)` | `db.stream(a)` — `bufferNext` overload removed |
 
-### 8. `ExecutionContext` parameters on `DBIOAction` methods
+### 8. `ExecutionContext` parameters on `SlickAction` methods
 
 Remove `(implicit ec: ExecutionContext)` (or `(ec)`) from all calls to:
 

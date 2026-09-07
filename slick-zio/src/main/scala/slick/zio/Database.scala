@@ -8,31 +8,31 @@ import zio.stream.ZStream
 
 import slick.ControlStatus
 import slick.DatabaseConfig
-import slick.dbio.{DBIOAction, NoStream, Streaming}
+import slick.dbio.{SlickAction, NoStream, Streaming}
 
 /** ZIO facade for Slick's effect-polymorphic database API. */
 trait Database extends slick.Database[Task, Database.StreamTask] {
   /**
     * Run a non-streaming action as `Task[R]`.
     *
-    * The returned `Task` is lazy: the underlying [[slick.dbio.DBIOAction]] starts when the `Task` is run,
+    * The returned `Task` is lazy: the underlying [[slick.dbio.SlickAction]] starts when the `Task` is run,
     * not when it is created.
     *
     * If the same `Task` value is run multiple times, each run performs a fresh, independent
     * execution of the action.
     */
-  override def run[R](a: DBIOAction[NoStream, Nothing, R]): Task[R]
+  override def run[R](a: SlickAction[NoStream, Nothing, R]): Task[R]
 
   /**
     * Open a streaming action as a `ZStream[Any, Throwable, T]`.
     *
-    * The returned stream is lazy: the underlying [[slick.dbio.DBIOAction]] starts when the stream is
+    * The returned stream is lazy: the underlying [[slick.dbio.SlickAction]] starts when the stream is
     * consumed, not when it is created.
     *
     * If the same stream value is consumed multiple times, each consumption performs a fresh,
     * independent execution of the action.
     */
-  override def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): ZStream[Any, Throwable, T]
+  override def stream[T](a: SlickAction[Streaming[T], Nothing, ?]): ZStream[Any, Throwable, T]
 }
 
 object Database {
@@ -48,10 +48,10 @@ object Database {
     */
   def fromCore(db: slick.basic.BasicBackend#BasicDatabaseDef[Task]): Database =
     new Database {
-      override def run[R](a: DBIOAction[NoStream, Nothing, R]): Task[R] =
+      override def run[R](a: SlickAction[NoStream, Nothing, R]): Task[R] =
         db.run(a)
 
-      override def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): ZStream[Any, Throwable, T] =
+      override def stream[T](a: SlickAction[Streaming[T], Nothing, ?]): ZStream[Any, Throwable, T] =
         ZStream.unwrapScoped(db.stream(a).toScopedZIO.map(fromIteratorNoBuffering))
 
       override def controlStatus: Task[ControlStatus] =

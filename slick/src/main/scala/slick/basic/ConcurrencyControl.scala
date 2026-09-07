@@ -62,7 +62,7 @@ object ConcurrencyControl {
     def withInflight[R](fr: => F[R]): F[R] =
       queue.tryAcquire.flatMap {
         case false =>
-          F.raiseError(new SlickException("DBIOAction queue full"))
+          F.raiseError(new SlickException("SlickAction queue full"))
         case true =>
           F.uncancelable { poll =>
             poll(acquireInflight)
@@ -80,7 +80,7 @@ object ConcurrencyControl {
     def inflightAcquire: F[Unit] =
       queue.tryAcquire.flatMap {
         case false =>
-          F.raiseError(new SlickException("DBIOAction queue full"))
+          F.raiseError(new SlickException("SlickAction queue full"))
         case true =>
           F.uncancelable { poll =>
             poll(acquireInflight)

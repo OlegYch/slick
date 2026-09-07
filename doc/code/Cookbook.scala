@@ -57,17 +57,17 @@ object Cookbook {
     //#exampleTrackNumberOfQueryCompilations
   }
 
-  object DistinguishDBIOActionsByEffectTypeAtRuntime {
+  object DistinguishSlickActionsByEffectTypeAtRuntime {
     def main(args: Array[String]): Unit = {
 
-        //#exampleDistinguishDBIOActionsByEffectTypeAtRuntime
+        //#exampleDistinguishSlickActionsByEffectTypeAtRuntime
         import slick.dbio._
 
         object EffectInfo {
 
           /**
-           * Type class which can be summoned to determine if a given DBIOAction is read-only,
-           * e.g., to let us determine whether to run the DBIOAction on the primary or the secondary.
+           * Type class which can be summoned to determine if a given SlickAction is read-only,
+           * e.g., to let us determine whether to run the SlickAction on the primary or the secondary.
            */
           sealed trait ReadOnly[E <: Effect] {
             def isReadOnly: Boolean
@@ -106,7 +106,7 @@ object Cookbook {
         // For brevity, this run method just demonstrates that we can distinguish the effect type at runtime.
         // In a real application, we could place this method in a class that contains a handle to the primary and a handle
         // to the secondary. Then the callers just call `run(action)` and don't worry about distinguishing the two handles.
-        def run[A, E <: Effect: EffectInfo.ReadOnly](action: DBIOAction[NoStream, E, A]): Unit =
+        def run[A, E <: Effect: EffectInfo.ReadOnly](action: SlickAction[NoStream, E, A]): Unit =
           if (implicitly[EffectInfo.ReadOnly[E]].isReadOnly) println("Action is read-only, run it on the secondary")
           else println("Action is not read-only, run it on the primary")
 
@@ -115,18 +115,18 @@ object Cookbook {
 
         // Read-only actions.
         // Each of these prints "Action is read-only, run it on the secondary"
-        run(action: DBIOAction[NoStream, Effect.Read, Int])
-        run(action: DBIOAction[NoStream, Effect.Read & Effect.Transactional, Int])
-        run(action: DBIOAction[NoStream, Effect & Effect.Read & Effect.Transactional, Int])
-        run(action: DBIOAction[NoStream, Effect.Transactional & Effect.Read & Effect, Int])
+        run(action: SlickAction[NoStream, Effect.Read, Int])
+        run(action: SlickAction[NoStream, Effect.Read & Effect.Transactional, Int])
+        run(action: SlickAction[NoStream, Effect & Effect.Read & Effect.Transactional, Int])
+        run(action: SlickAction[NoStream, Effect.Transactional & Effect.Read & Effect, Int])
 
         // Other actions.
         // "Action is not read-only, run it on the primary"
-        run(action: DBIOAction[NoStream, Effect, Int])
-        run(action: DBIOAction[NoStream, Effect.Write, Int])
-        run(action: DBIOAction[NoStream, Effect.Schema, Int])
-        run(action: DBIOAction[NoStream, Effect.All, Int])
-        //#exampleDistinguishDBIOActionsByEffectTypeAtRuntime
+        run(action: SlickAction[NoStream, Effect, Int])
+        run(action: SlickAction[NoStream, Effect.Write, Int])
+        run(action: SlickAction[NoStream, Effect.Schema, Int])
+        run(action: SlickAction[NoStream, Effect.All, Int])
+        //#exampleDistinguishSlickActionsByEffectTypeAtRuntime
     }
   }
 }

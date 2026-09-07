@@ -1,7 +1,7 @@
 package slick
 
 import java.io.Closeable
-import slick.dbio.{DBIOAction, NoStream, Streaming}
+import slick.dbio.{SlickAction, NoStream, Streaming}
 
 /** Effect-polymorphic database API.
   *
@@ -14,16 +14,16 @@ import slick.dbio.{DBIOAction, NoStream, Streaming}
   * adapt it into their effect/stream abstractions.
   */
 trait Database[F[_], S[_]] extends Closeable {
-  /** Run a `DBIOAction` and return its result in `F[R]`. */
-  def run[R](a: DBIOAction[NoStream, Nothing, R]): F[R]
+  /** Run a `SlickAction` and return its result in `F[R]`. */
+  def run[R](a: SlickAction[NoStream, Nothing, R]): F[R]
 
-  /** Open a streaming `DBIOAction` as `S[T]`.
+  /** Open a streaming `SlickAction` as `S[T]`.
     *
     * Resource acquisition and release semantics are defined by the concrete
     * wrapper implementation, but must ensure backend resources are released
     * when the stream completes, fails, or is canceled.
     */
-  def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): S[T]
+  def stream[T](a: SlickAction[Streaming[T], Nothing, ?]): S[T]
 
   /** Inspect current admission and connection-slot control status. */
   def controlStatus: F[ControlStatus]

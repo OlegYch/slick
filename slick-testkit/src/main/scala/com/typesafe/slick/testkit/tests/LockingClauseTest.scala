@@ -3,7 +3,7 @@ package com.typesafe.slick.testkit.tests
 import java.util.concurrent.{CountDownLatch, Executor, LinkedBlockingQueue, ThreadPoolExecutor, TimeUnit}
 import com.typesafe.slick.testkit.util.{AsyncTest, JdbcTestDB}
 import org.junit.Assert
-import slick.dbio.DBIOAction
+import slick.dbio.SlickAction
 import slick.util.Logging
 import cats.effect.unsafe.implicits.global
 
@@ -40,7 +40,7 @@ class LockingClauseTest extends AsyncTest[JdbcTestDB] with Logging {
       }
       completeLatch.countDown()
     })
-    DBIOAction.successful(()) // dummy action to add into pipeline
+    SlickAction.successful(()) // dummy action to add into pipeline
   }
 
   def testForUpdate: DBIO[Unit] = {

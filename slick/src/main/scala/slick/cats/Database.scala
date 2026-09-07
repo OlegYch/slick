@@ -5,31 +5,31 @@ import cats.effect.Resource
 
 import slick.ControlStatus
 import slick.DatabaseConfig
-import slick.dbio.{DBIOAction, NoStream, Streaming}
+import slick.dbio.{SlickAction, NoStream, Streaming}
 
 /** Cats Effect / fs2 facade for Slick's effect-polymorphic database API. */
 trait Database extends slick.Database[IO, Database.StreamIO] {
   /**
     * Run a non-streaming action as `IO[R]`.
     *
-    * The returned `IO` is lazy: the underlying `DBIOAction` starts when the `IO` is run,
+    * The returned `IO` is lazy: the underlying `SlickAction` starts when the `IO` is run,
     * not when it is created.
     *
     * If the same `IO` value is run multiple times, each run performs a fresh, independent
     * execution of the action.
     */
-  override def run[R](a: DBIOAction[NoStream, Nothing, R]): IO[R]
+  override def run[R](a: SlickAction[NoStream, Nothing, R]): IO[R]
 
   /**
     * Open a streaming action as an `fs2.Stream[IO, T]`.
     *
-    * The returned stream is lazy: the underlying `DBIOAction` starts when the stream is
+    * The returned stream is lazy: the underlying `SlickAction` starts when the stream is
     * consumed, not when it is created.
     *
     * If the same stream value is consumed multiple times, each consumption performs a fresh,
     * independent execution of the action.
     */
-  override def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): fs2.Stream[IO, T]
+  override def stream[T](a: SlickAction[Streaming[T], Nothing, ?]): fs2.Stream[IO, T]
 }
 
 object Database {
@@ -45,10 +45,10 @@ object Database {
     */
   def fromCore(db: slick.basic.BasicBackend#BasicDatabaseDef[IO]): Database =
     new Database {
-      override def run[R](a: DBIOAction[NoStream, Nothing, R]): IO[R] =
+      override def run[R](a: SlickAction[NoStream, Nothing, R]): IO[R] =
         db.run(a)
 
-      override def stream[T](a: DBIOAction[Streaming[T], Nothing, ?]): fs2.Stream[IO, T] =
+      override def stream[T](a: SlickAction[Streaming[T], Nothing, ?]): fs2.Stream[IO, T] =
         fs2.Stream.resource(db.stream(a)).flatMap { it =>
           // chunkSize = 1 is required by mutators since they require the underlying
           // iterator doesn't advance beyond what the mutator object represents

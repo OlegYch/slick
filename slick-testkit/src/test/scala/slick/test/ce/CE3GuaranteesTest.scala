@@ -200,7 +200,7 @@ class CE3GuaranteesTest extends CatsEffectSuite {
       // Third caller should be rejected immediately.
       rejected <- db.run(DBIO.successful(2)).attempt
       _ = assert(rejected.swap.exists(_.isInstanceOf[SlickException]))
-      _ = assert(rejected.swap.exists(_.getMessage == "DBIOAction queue full"))
+      _ = assert(rejected.swap.exists(_.getMessage == "SlickAction queue full"))
 
       _ <- release1.complete(())
       _ <- fiber1.join

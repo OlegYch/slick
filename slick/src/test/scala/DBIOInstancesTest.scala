@@ -1,3 +1,5 @@
+package slick.dbio
+
 /**
  * Copyright 2017-present, Risk Management Solutions, Inc.
  * All rights reserved.
@@ -19,7 +21,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.Checkers
 import org.typelevel.discipline.scalatest.FunSuiteDiscipline
-import slick.dbio.{DBIO, DBIOAction, DBIOInstances, DBIOInstances3, DBIOInstances2, Effect, NoStream}
+import slick.dbio.{DBIO, SlickAction, DBIOInstances, DBIOInstances3, DBIOInstances2, Effect, NoStream}
 import cats.effect.unsafe.implicits.global
 
 import scala.util.{Failure, Success}
@@ -62,7 +64,7 @@ class DBIOInstancesTest extends AnyFunSuite with Matchers with FunSuiteDisciplin
   (0 to 10).toList.traverse{i => DBIO.successful(i)}
 
   def monad[F[_] : Monad, A](fa: F[A]): F[A] = fa
-  val fail1: DBIOAction[NoStream, Effect.All, String] = DBIO.successful("hello")
+  val fail1: DBIO[String] = DBIO.successful("hello")
   val fail2 = DBIO.successful("hello")
   val success: DBIO[String] = DBIO.successful("hello")
   monad(fail1.flatMap(_ => fail2))

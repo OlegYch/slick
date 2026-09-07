@@ -11,7 +11,7 @@ import cats.effect.unsafe.implicits.global
 import slick.jdbc.DatabaseConfig
 import slick.basic.{BasicProfile, Capability}
 import slick.util.ClassLoaderUtil
-import slick.dbio.{DBIO, DBIOAction, Effect, NoStream}
+import slick.dbio.{DBIO, SlickAction, Effect, NoStream}
 import slick.jdbc.{JdbcDataSource, JdbcProfile, ResultSetAction}
 import slick.jdbc.GetResult.*
 import slick.relational.RelationalProfile
@@ -179,9 +179,9 @@ abstract class JdbcTestDB(val confName: String) extends SqlTestDB {
       )
     } yield ()
   }
-  override def assertTablesExist(tables: String*): DBIOAction[NoStream, Effect, Unit] =
+  override def assertTablesExist(tables: String*): SlickAction[NoStream, Effect, Unit] =
     DBIO.seq(tables.map(t => sql"""select 1 from #${profile.quoteIdentifier(t)} where 1 < 0""".as[Int]) *)
-  override def assertNotTablesExist(tables: String*): DBIOAction[NoStream, Effect, Unit] =
+  override def assertNotTablesExist(tables: String*): SlickAction[NoStream, Effect, Unit] =
     DBIO.seq(tables.map(t => sql"""select 1 from #${profile.quoteIdentifier(t)} where 1 < 0""".as[Int].failed) *)
 
   /** Create a single-session database that reuses an existing connection.
@@ -199,7 +199,7 @@ abstract class JdbcTestDB(val confName: String) extends SqlTestDB {
     profile.backend.makeDatabase[IO](dc).unsafeRunSync()
   }
 
-  final def blockingRunOnSession[R](a: DBIOAction[NoStream, Nothing, R])
+  final def blockingRunOnSession[R](a: SlickAction[NoStream, Nothing, R])
                                    (implicit session: profile.backend.Session): R = {
     val db = createSingleSessionDatabase
     db.run(a).unsafeRunSync()

@@ -92,7 +92,7 @@ case class TestMethod(name: String, desc: Description, method: Method, cl: Class
     val r = method.getReturnType
     if (r == classOf[IO[?]])
       method.invoke(testObject).asInstanceOf[IO[Any]].unsafeRunSync()
-    else if (r == classOf[DBIOAction[?, ?, ?]])
+    else if (r == classOf[SlickAction[?, ?, ?]])
       testObject.db.run(method.invoke(testObject).asInstanceOf[DBIO[Any]]).unsafeRunSync()
     else
       throw new RuntimeException(
@@ -162,8 +162,8 @@ sealed abstract class GenericTest[TDB >: Null <: TestDB](implicit TdbClass: Clas
     } finally set(old)
   }
 
-  final def mark[R, S <: NoStream, E <: Effect](id: String, f: => DBIOAction[S, E, R]): DBIOAction[S, E, R] =
-    mark[DBIOAction[S, E, R]](id, f.named(id))
+  final def mark[R, S <: NoStream, E <: Effect](id: String, f: => SlickAction[S, E, R]): SlickAction[S, E, R] =
+    mark[SlickAction[S, E, R]](id, f.named(id))
 
   def assertNesting(q: Rep[?], exp: Int): Unit = {
     import slick.ast.*
@@ -227,9 +227,9 @@ abstract class AsyncTest[TDB >: Null <: TestDB](implicit TdbClass: ClassTag[TDB]
     def getDumpInfo = DumpInfo(name = "<GetStatementParameters>")
   }
 
-  def ifCap[E <: Effect, R](caps: Capability*)(f: => DBIOAction[NoStream, E, R]): DBIOAction[NoStream, E, Unit] =
+  def ifCap[E <: Effect, R](caps: Capability*)(f: => SlickAction[NoStream, E, R]): SlickAction[NoStream, E, Unit] =
     if(caps.forall(c => tdb.capabilities.contains(c))) f.andThen(DBIO.successful(())) else DBIO.successful(())
-  def ifNotCap[E <: Effect, R](caps: Capability*)(f: => DBIOAction[NoStream, E, R]): DBIOAction[NoStream, E, Unit] =
+  def ifNotCap[E <: Effect, R](caps: Capability*)(f: => SlickAction[NoStream, E, R]): SlickAction[NoStream, E, Unit] =
     if(!caps.forall(c => tdb.capabilities.contains(c))) f.andThen(DBIO.successful(())) else DBIO.successful(())
 
   def ifCapF[R](caps: Capability*)(f: => IO[R]): IO[Unit] =
@@ -242,7 +242,7 @@ abstract class AsyncTest[TDB >: Null <: TestDB](implicit TdbClass: ClassTag[TDB]
   def ifNotCapU[T](caps: Capability*)(f: => T): Unit =
     if(!caps.forall(c => tdb.capabilities.contains(c))) f
 
-  def seq[E <: Effect](actions: DBIOAction[?, NoStream, E]*): DBIOAction[NoStream, E, Unit] = DBIO.seq[E](actions*)
+  def seq[E <: Effect](actions: SlickAction[NoStream, E, ?]*): SlickAction[NoStream, E, Unit] = DBIO.seq[E](actions: _*)
 
   /** Consume a Stream and materialize it as a Vector. */
   def materialize[T](p: Stream[IO, T]): IO[Vector[T]] =
@@ -305,12 +305,12 @@ abstract class AsyncTest[TDB >: Null <: TestDB](implicit TdbClass: ClassTag[TDB]
     }
   }
 
-  implicit class DBIOActionExtensionMethods[T, +S <: NoStream, -E <: Effect](action: DBIOAction[S, E, T]) {
+  implicit class SlickActionExtensionMethods[T, +S <: NoStream, -E <: Effect](action: SlickAction[S, E, T]) {
     infix def shouldYield(t: T) = action.map(_ shouldBe t)
   }
 
-  implicit class CollectionDBIOActionExtensionMethods[T, +S <: NoStream, -E <: Effect](action:
-                                                                                       DBIOAction[S, E, Vector[T]]) {
+  implicit class CollectionSlickActionExtensionMethods[T, +S <: NoStream, -E <: Effect](action:
+                                                                                       SlickAction[S, E, Vector[T]]) {
     infix def shouldYield(t: Set[T]) = action.map(_.toSet shouldBe t)
     infix def shouldYield(t: Seq[T]) = action.map(_ shouldBe t)
     infix def shouldYield(t: List[T]) = action.map(_.toList shouldBe t)
