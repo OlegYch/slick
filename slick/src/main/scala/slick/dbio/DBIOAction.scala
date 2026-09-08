@@ -34,7 +34,14 @@ import slick.util.{ignoreFollowOnError, Dumpable, DumpInfo}
   *           user code, e.g. to automatically direct all read-only Actions to a slave database
   *           and write Actions to the master copy.
   */
-sealed trait DBIOAction[+R, +S <: NoStream, -E <: Effect] extends Dumpable {
+sealed trait DBIOBase[+R] {
+  def toDBIO: DBIO[R] = this.asInstanceOf[DBIO[R]]
+}
+object DBIOBase {
+  import scala.language.implicitConversions
+  implicit def toDBIO[R](a: DBIOBase[R]): DBIO[R] = a.toDBIO
+}
+sealed trait DBIOAction[+R, +S <: NoStream, -E <: Effect] extends Dumpable with DBIOBase[R] {
   /** Transform the result of a successful execution of this action. If this action fails, the
     * resulting action also fails. */
   def map[R2](f: R => R2): DBIOAction[R2, NoStream, E] =

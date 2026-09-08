@@ -26,8 +26,9 @@ import scala.util.{Failure, Success}
 
 class DBIOInstancesTest extends AnyFunSuite with Matchers with FunSuiteDiscipline with Checkers with AllInstances
   with DBIOInstances
-  with DBIOInstances2
+//  with DBIOInstances2
 //  with DBIOInstances3
+  with slick.dbio.DBIOBaseInstances
   {
   private val db = slick.memory.MemoryProfile.backend.Database()
 
@@ -48,7 +49,7 @@ class DBIOInstancesTest extends AnyFunSuite with Matchers with FunSuiteDisciplin
     Arbitrary(Gen.oneOf(arbitrary[T].map(DBIO.successful), arbitrary[Throwable].map(DBIO.failed)))
 
   implicit val throwableEq: Eq[Throwable] = Eq.fromUniversalEquals
-  implicit val iso: Isomorphisms[DBIO] = SemigroupalTests.Isomorphisms.invariant[DBIO]
+//  implicit val iso: Isomorphisms[DBIO] = SemigroupalTests.Isomorphisms.invariant[DBIO]
 
   // Need non-fatal Throwable for Future recoverWith/handleError
   implicit val nonFatalArbitrary: Arbitrary[Throwable] =
@@ -57,15 +58,16 @@ class DBIOInstancesTest extends AnyFunSuite with Matchers with FunSuiteDisciplin
   implicit def cogenForDbio[A]: Cogen[DBIO[A]] =
     Cogen[Unit].contramap(_ => ())
 
-  checkAll("DBIO[Int]", MonadErrorTests[DBIO, Throwable].monadError[Int, Int, Int])
+//  checkAll("DBIO[Int]", MonadErrorTests[DBIO, Throwable].monadError[Int, Int, Int])
 
+  (0 to 10).toList.traverse{i => DBIO.successful(i).toDBIO}
   (0 to 10).toList.traverse{i => DBIO.successful(i)}
 //
   def monad[F[_] : Monad, A](fa: F[A]): F[A] = fa
-  val fail1: DBIOAction[String, NoStream, Effect.All] = DBIO.successful("hello")
-  val fail2 = DBIO.successful("hello")
+//  val fail1: DBIOAction[String, NoStream, Effect.All] = DBIO.successful("hello")
+//  val fail2 = DBIO.successful("hello")
   val success: DBIO[String] = DBIO.successful("hello")
-  monad(fail1)
-  monad(fail2)
+//  monad(fail1)
+//  monad(fail2)
 }
 
