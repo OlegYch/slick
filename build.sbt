@@ -250,7 +250,12 @@ lazy val slick =
       Compile / doc / scalacOptions ++= Seq(
         "-doc-root-content", "scaladoc-root.txt"
       ),
-
+      Test / unmanagedSourceDirectories ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 12)) => Nil
+          case _ => List((Test / sourceDirectory).value / "scala-2.13+")
+        }
+      },
       // suppress test status output
       test := TestResult.Passed,
       testOnly := TestResult.Passed

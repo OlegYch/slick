@@ -5,12 +5,11 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
-
 import slick.SlickException
 import slick.basic.BasicBackend
 import slick.compat.collection.*
 import slick.util.CloseableIterator
-import slick.util.{ignoreFollowOnError, Dumpable, DumpInfo}
+import slick.util.{DumpInfo, Dumpable, ignoreFollowOnError}
 
 /** A Database I/O Action that can be executed on a database. The SlickAction type allows a
   * separation of execution logic and resource usage management logic from composition logic.
@@ -175,7 +174,7 @@ sealed trait SlickAction[+S <: NoStream, -E <: Effect, +R] extends Dumpable {
   def isLogged: Boolean = false
 }
 
-object SlickAction {
+object SlickAction extends SlickActionInstances {
   private val UnitAction: SlickAction[NoStream, Effect, Unit] = SuccessAction(())
 
   /** Lift a constant value to a [[SlickAction]]. */
